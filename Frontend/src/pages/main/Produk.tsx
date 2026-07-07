@@ -65,7 +65,7 @@ export const KatalogProduk: React.FC = () => {
         <div className="w-full bg-white border-4 border-black p-4 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div>
             <h1 className="text-xl font-black uppercase text-black">Katalog Smartphone</h1>
-            <p className="text-xs text-stone-500 font-bold uppercase mt-0.5">Daftar gawai resmi terkelompok per-brand</p>
+            <p className="text-xs text-stone-500 font-bold uppercase mt-0.5">Daftar Smartphone resmi per-brand</p>
           </div>
           
           <OptionBox<FilterType>

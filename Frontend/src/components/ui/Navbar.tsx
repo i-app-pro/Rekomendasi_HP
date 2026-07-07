@@ -24,16 +24,17 @@ export const Navbar = () => {
 
           {/* Navigation Links - Desktop Only */}
           <div className="hidden md:flex items-center gap-8 text-base font-semibold text-gray-700">
-            <a href="#" className="hover:text-[#e53935] transition-colors">Home</a>
-            <a href="#" className="hover:text-[#e53935] transition-colors">Products</a>
-            <a href="#" className="hover:text-[#e53935] transition-colors">Rekomendasi</a>
-            <a href="#" className="hover:text-[#e53935] transition-colors">About Us</a>
+            <a href="/" className="hover:text-[#e53935] transition-colors">Home</a>
+            <a href="/produk" className="hover:text-[#e53935] transition-colors">Products</a>
+            <a href="/rekomendasi" className="hover:text-[#e53935] transition-colors">Rekomendasi</a>
+            <a href="/tentang" className="hover:text-[#e53935] transition-colors">About Us</a>
           </div>
 
           {/* Action Button & Hamburger */}
           <div className="flex items-center gap-4">
             <button className="hidden sm:inline-block px-5 py-2 text-sm font-bold text-white bg-[#d62828] hover:bg-[#b71c1c] rounded-xl transition-all shadow-sm">
               Login / Register
+              <a href="/login" className="absolute inset-0 w-full h-full"></a>
             </button>
             
             {/* Mobile Menu Button */}
@@ -58,12 +59,13 @@ export const Navbar = () => {
       {/* Mobile Menu Panel */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 px-4 pt-2 pb-4 space-y-2 animate-fadeIn">
-          <a href="#" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Home</a>
-          <a href="#" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Products</a>
-          <a href="#" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Rekomendasi</a>
-          <a href="#" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">About Us</a>
+          <a href="/" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Home</a>
+          <a href="/produk" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Products</a>
+          <a href="/rekomendasi" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">Rekomendasi</a>
+          <a href="/tentang" className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]">About Us</a>
           <button className="w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-[#d62828] rounded-xl">
             Login / Register
+            <a href="/login" className="absolute inset-0 w-full h-full"></a>
           </button>
         </div>
       )}

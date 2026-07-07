@@ -99,7 +99,12 @@ export const HalamanRekomendasi: React.FC = () => {
               Pilih kriteria dasar & geser prioritas bobot kepentingan SPK
             </p>
           </div>
-          <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center text-xl shadow-[3px_3px_0px_rgba(255,255,255,0.2)]">🦖</div>
+          <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center text-xl shadow-[3px_3px_0px_rgba(255,255,255,0.2)]">
+            <img
+            src="src/assets/brand/reno.png"
+            alt="Ilustrasi"
+            />
+          </div>
         </div>
 
         {/* =========================================================

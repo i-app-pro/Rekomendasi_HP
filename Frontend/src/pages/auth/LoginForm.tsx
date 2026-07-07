@@ -29,9 +29,10 @@ export default function LoginForm() {
 
   const onSubmit = (data: FormData) => {
     console.log("Simulasi Login Data:", data);
-    // Dummy bypass langsung sukses masuk ke dashboard
+    
+    // Alur bypass langsung sukses mengarahkan ke halaman dashboard
     alert("Login Berhasil (Simulasi Dummy)!");
-    navigate("/dashboard");
+    navigate("/");
   };
 
   return (
@@ -45,7 +46,7 @@ export default function LoginForm() {
       {/* Field Input Email */}
       <InputText
         label="Email"
-        nama="username"
+        nama="username" // Diikat ke properti "nama" sesuai prop komponen InputText Anda
         placeholder="Masukkan email anda..."
         register={register}
         error={errors.username?.message}
@@ -54,7 +55,7 @@ export default function LoginForm() {
       {/* Field Input Password */}
       <InputPassword
         label="Password"
-        nama="password"
+        nama="password" // Diikat ke properti "nama" sesuai prop komponen InputPassword Anda
         placeholder="Masukkan password anda..."
         register={register}
         error={errors.password?.message}
@@ -77,7 +78,7 @@ export default function LoginForm() {
           type="submit" 
           label="LOGIN" 
           variant="primary" 
-          className="w-full"
+          className="w-full" // w-full memastikan tombol melebar penuh di dalam card merah melengkung
         />
       </div>
 

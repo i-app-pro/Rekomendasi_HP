@@ -16,7 +16,17 @@ interface MemberData {
 const DATA_TIM: MemberData[] = [
   {
     id: 'kiri',
-    foto: 'https://via.placeholder.com/150', // Ganti dengan path foto asli jika ada
+    foto: 'https://via.placeholder.com/150',
+    nama: 'Faizal Isman',
+    status: 'Dashboard Layout Designer',
+    universitas: 'Universitas Harkat Negeri',
+    bahasaPemrograman: ['Figma', 'CSS', 'HTML'],
+    usernameGit: 'albertwijaya',
+    usernameIg: 'albertwj',
+  },
+  {
+    id: 'tengah',
+    foto: 'https://via.placeholder.com/150', 
     nama: 'Ramdani Ardhin Pasha',
     status: 'Lead Developer',
     universitas: 'Universitas Harkat Negeri',
@@ -25,19 +35,9 @@ const DATA_TIM: MemberData[] = [
     usernameIg: 'ramdaniardhin',
   },
   {
-    id: 'tengah',
-    foto: 'https://via.placeholder.com/150',
-    nama: 'Albert Wijaya',
-    status: 'UI/UX Designer',
-    universitas: 'Universitas Harkat Negeri',
-    bahasaPemrograman: ['Figma', 'CSS', 'HTML'],
-    usernameGit: 'albertwijaya',
-    usernameIg: 'albertwj',
-  },
-  {
     id: 'kanan',
     foto: 'https://via.placeholder.com/150',
-    nama: 'Budi Setiawan',
+    nama: 'Amirul Madjid Ibrahim',
     status: 'Backend Engineer',
     universitas: 'Universitas Harkat Negeri',
     bahasaPemrograman: ['Go', 'PostgreSQL', 'Docker'],
@@ -58,7 +58,13 @@ export const HalamanAboutUs: React.FC = () => {
       <div className="w-full bg-[#1e2530] border-b-4 border-black py-8 px-6 md:px-16 flex flex-row items-center justify-between shadow-[0_4px_0_0_rgba(0,0,0,1)]">
         <div className="flex items-center justify-center w-24 md:w-32">
           {/* Ilustrasi Dinosaurus Merah */}
-          <span className="text-5xl md:text-7xl animate-bounce">🦖</span>
+          {/* <span className="text-5xl md:text-7xl animate-bounce"> */}
+            <img 
+            src="src/assets/brand/reko.png"
+            alt="Ilustrasi Dinosaurus Merah"
+            className="w-full h-auto object-contain [image-rendering:pixelated]"
+            />
+          {/* </span> */}
         </div>
         <div className="text-right max-w-xl">
           <h1 className="text-white text-2xl md:text-4xl font-black uppercase tracking-wide">
@@ -99,7 +105,7 @@ export const HalamanAboutUs: React.FC = () => {
           {/* Wrapper Gambar Ilustrasi Bertumpuk */}
           <div className="relative w-full max-w-2xl bg-[#d9d9d9] border-4 border-black p-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-md">
             <img 
-              src="assets/brand/trio.png" 
+              src="src/assets/brand/trio.png" 
               alt="Trio Rekophone Team" 
               className="w-full h-auto object-contain [image-rendering:pixelated]"
             />

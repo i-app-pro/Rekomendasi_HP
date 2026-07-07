@@ -14,14 +14,14 @@ export default function AuthLayout() {
         <div className="hidden md:flex w-1/2 flex-col items-center justify-center text-center">
           <div className="w-80 h-80 flex items-center justify-center select-none mb-4">
             <img 
-              src="assets/brand/reko.png" 
+              src="src/assets/brand/reko.png" 
               alt="RekoPhone Dino Mascot" 
               className="w-full h-full object-contain [image-rendering:pixelated]"
             />
           </div>
           <div className="w-72 h-auto">
             <img 
-              src="assets/brand/rekophone.png" 
+              src="src/assets/brand/rekophone.png" 
               alt="RekoPhone Text Logo" 
               className="w-full h-auto object-contain"
             />
@@ -34,7 +34,7 @@ export default function AuthLayout() {
            ========================================================= */}
         <div className="block md:hidden w-full max-w-50 mx-auto mb-2 text-center select-none">
           <img 
-            src="assets/brand/rekophone.png" 
+            src="src/assets/brand/rekophone.png" 
             alt="RekoPhone Text Logo Mobile" 
             className="w-full h-auto object-contain mx-auto"
           />

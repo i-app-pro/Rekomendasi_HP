@@ -31,7 +31,7 @@ export default function LoginForm() {
     console.log("Simulasi Login Data:", data);
     
     // Alur bypass langsung sukses mengarahkan ke halaman dashboard
-    alert("Login Berhasil (Simulasi Dummy)!");
+    alert("Login Berhasil!");
     navigate("/");
   };
 

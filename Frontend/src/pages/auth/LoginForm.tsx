@@ -7,19 +7,21 @@ import { useNavigate } from "react-router-dom";
 import { InputText } from "../../components/ui/InputText";
 import { InputPassword } from "../../components/ui/InputPassword";
 import { Button } from "../../components/ui/Button";
+import { useAuthStore } from "../../store/useAuthStore";
 
 type FormData = {
-  username: string;
+  email: string;
   password: string;
 };
 
 const schema = z.object({
-  username: z.string().min(2, "Username atau Email tidak valid"),
+  email: z.string().email("Format email tidak valid"),
   password: z.string().min(6, "Password harus minimal 6 karakter"),
 });
 
 export default function LoginForm() {
   const navigate = useNavigate();
+  const { login, isLoading, error } = useAuthStore();
 
   const {
     register,
@@ -27,12 +29,15 @@ export default function LoginForm() {
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = (data: FormData) => {
-    console.log("Simulasi Login Data:", data);
-    
-    // Alur bypass langsung sukses mengarahkan ke halaman dashboard
-    alert("Login Berhasil!");
-    navigate("/");
+  const onSubmit = async (data: FormData) => {
+    try {
+      const user = await login({ email: data.email, password: data.password });
+      // Admin diarahkan ke beranda juga (dashboard admin belum tersedia di sisi FE),
+      // customer langsung ke beranda.
+      navigate(user.role === "admin" ? "/" : "/");
+    } catch {
+      // Pesan error sudah ditangani & disimpan di store (lihat `error` di bawah)
+    }
   };
 
   return (
@@ -46,20 +51,27 @@ export default function LoginForm() {
       {/* Field Input Email */}
       <InputText
         label="Email"
-        nama="username" // Diikat ke properti "nama" sesuai prop komponen InputText Anda
+        nama="email"
         placeholder="Masukkan email anda..."
         register={register}
-        error={errors.username?.message}
+        error={errors.email?.message}
       />
 
       {/* Field Input Password */}
       <InputPassword
         label="Password"
-        nama="password" // Diikat ke properti "nama" sesuai prop komponen InputPassword Anda
+        nama="password"
         placeholder="Masukkan password anda..."
         register={register}
         error={errors.password?.message}
       />
+
+      {/* Pesan error dari backend (mis. email/password salah) */}
+      {error && (
+        <p className="text-red-600 text-xs md:text-sm font-semibold mb-4 -mt-2 text-center">
+          {error}
+        </p>
+      )}
 
       {/* Teks Navigasi ke Register */}
       <p className="text-[11px] md:text-xs font-semibold text-gray-500 mt-1 mb-6 md:mb-8 select-none">
@@ -76,8 +88,9 @@ export default function LoginForm() {
       <div className="w-full flex justify-center">
         <Button 
           type="submit" 
-          label="LOGIN" 
+          label={isLoading ? "MEMPROSES..." : "LOGIN"}
           variant="primary" 
+          disabled={isLoading}
           className="w-full" // w-full memastikan tombol melebar penuh di dalam card merah melengkung
         />
       </div>

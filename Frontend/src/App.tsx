@@ -7,6 +7,7 @@ import AuthLayout from "./layout/AuthLayout";
 import MainLayout from "./layout/MainLayout";
 import LoginForm from "./pages/auth/LoginForm";
 import RegisterForm from "./pages/auth/RegisterForm";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 export default function App() {
   return (
@@ -16,8 +17,13 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Beranda />} />
           <Route path="/produk" element={<HalamanProduk />} />
-          <Route path="/rekomendasi" element={<HalamanRekomendasi />} />
           <Route path="/tentang" element={<HalamanAboutUs />} />
+
+          {/* Rekomendasi butuh login (endpoint /api/sessions & /api/recommendation
+              mewajibkan Authorization: Bearer <token>) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/rekomendasi" element={<HalamanRekomendasi />} />
+          </Route>
         </Route>
 
         {/* Rute Auth (Menggunakan AuthLayout merah melengkung yang kita buat) */}

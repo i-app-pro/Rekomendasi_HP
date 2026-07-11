@@ -155,11 +155,7 @@ export const HalamanAboutUs: React.FC = () => {
       {/* =========================================================
           4. FOOTER IDENTITAS
          ========================================================= */}
-      <footer className="w-full bg-[#1e2530] border-t-4 border-black py-4 text-center mt-auto">
-        <span className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-widest">
-          RekoPhone &copy; 2026
-        </span>
-      </footer>
+
 
       {/* =========================================================
           5. POP-UP MODAL POP-UP UNTUK DETAIL PROFILE KARTU

@@ -32,7 +32,7 @@ export default function LoginForm() {
     
     // Alur bypass langsung sukses mengarahkan ke halaman dashboard
     alert("Login Berhasil!");
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (

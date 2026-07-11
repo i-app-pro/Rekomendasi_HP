@@ -143,18 +143,24 @@ view view_alternatif_kriteria_bobot {
   product_id    Int?
   nama_produk   String? @db.VarChar(100)
   nama_brand    String? @db.VarChar(100)
-  c1            Int?
-  c2            Int?
-  c3            Int?
-  c4            Int?
-  c5            Int?
-  c6            Int?
+  c1            BigInt?
+  c2            BigInt?
+  c3            BigInt?
+  c4            BigInt?
+  c5            BigInt?
+  c6            BigInt?
   bobot_c1      Int?
   bobot_c2      Int?
   bobot_c3      Int?
   bobot_c4      Int?
   bobot_c5      Int?
   bobot_c6      Int?
+  pref_c1       Int?
+  pref_c2       Int?
+  pref_c3       Int?
+  pref_c4       Int?
+  pref_c5       Int?
+  pref_c6       Int?
 }
 
 view view_perhitungan_saw {
@@ -163,7 +169,7 @@ view view_perhitungan_saw {
   product_id    Int?
   nama_produk   String?  @db.VarChar(100)
   nama_brand    String?  @db.VarChar(100)
-  nilai_saw     Decimal? @db.Decimal(31, 6)
+  nilai_saw     Decimal? @db.Decimal(41, 6)
   ranking_saw   BigInt?
 }
 

@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import SliderBobot from '../../components/ui/SliderBobot';
+import OptionBox from '../../components/ui/OptionBox';
 import ProductCard from '../../components/CardProduk';
 import { ProductDetail } from '../../components/CardDetail';
-import type { ProductData, Brand } from '../../types/product';
-import { mapApiProductToProductData } from '../../types/product';
-import type { Criteria } from '../../types/spk';
-import { getCriteria } from '../../api/criteria';
-import { getBrands } from '../../api/brands';
-import { createSession, submitAllPembobotan } from '../../api/sessions';
+import type { ProductData } from '../../types/product';
+import { mapRecommendationItemToProductData } from '../../types/product';
+import type { Criteria, CriteriaValue } from '../../types/spk';
+import { getCriteria, getAllCriteriaValues } from '../../api/criteria';
+import { createSession, submitAllPembobotan, submitAllPreferences } from '../../api/sessions';
 import { getRecommendation, type SpkMethod } from '../../api/recommendation';
 
 interface RankedProduct {
@@ -23,8 +23,10 @@ export const HalamanRekomendasi: React.FC = () => {
   const [isLoadingCriteria, setIsLoadingCriteria] = useState(true);
   const [criteriaError, setCriteriaError] = useState<string | null>(null);
 
-  // Daftar brand (buat join manual ke hasil rekomendasi, sama kayak di Produk.tsx)
-  const [brandMap, setBrandMap] = useState<Map<number, Brand>>(new Map());
+  // Daftar CriteriaValue (GET /api/criteria/values/all) — dipakai untuk isi opsi dropdown preferensi
+  const [criteriaValues, setCriteriaValues] = useState<CriteriaValue[]>([]);
+  // Preferensi customer per kriteria: criteriaId -> criteriaValueId terpilih ('' = tidak pilih/tidak filter)
+  const [preferensi, setPreferensi] = useState<Record<number, string>>({});
 
   // Metode SPK aktif (tab) & session yang sedang berjalan
   const [activeMethod, setActiveMethod] = useState<SpkMethod>('wp');
@@ -39,16 +41,19 @@ export const HalamanRekomendasi: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
-  // Ambil daftar kriteria + bobot default dari backend saat halaman dibuka
+  // Ambil daftar kriteria + criteria value + bobot default dari backend saat halaman dibuka
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setIsLoadingCriteria(true);
-        const [data, brands] = await Promise.all([getCriteria(), getBrands()]);
+        const [data, values] = await Promise.all([
+          getCriteria(),
+          getAllCriteriaValues(),
+        ]);
         if (!mounted) return;
         setCriteriaList(data);
-        setBrandMap(new Map(brands.map((b) => [b.id, b])));
+        setCriteriaValues(values);
         const initialBobot: Record<number, number> = {};
         data.forEach((c) => { initialBobot[c.id] = c.default_bobot ?? 50; });
         setBobot(initialBobot);
@@ -63,11 +68,28 @@ export const HalamanRekomendasi: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Kelompokkan CriteriaValue per criteria_id, diurutkan dari nilai terkecil,
+  // supaya dropdown menampilkan "< 8GB" sebelum ">= 8GB", dst.
+  const valuesByCriteria = useMemo(() => {
+    const map = new Map<number, CriteriaValue[]>();
+    criteriaValues.forEach((cv) => {
+      const arr = map.get(cv.criteria_id) ?? [];
+      arr.push(cv);
+      map.set(cv.criteria_id, arr);
+    });
+    map.forEach((arr) => arr.sort((a, b) => a.nilai - b.nilai));
+    return map;
+  }, [criteriaValues]);
+
   const handleSliderChange = (id: string, value: number) => {
     setBobot(prev => ({ ...prev, [Number(id)]: value }));
   };
 
-  // Alur: buat session baru -> kirim semua bobot -> ambil hasil ranking metode aktif
+  const handlePreferensiChange = (criteriaId: number, criteriaValueId: string) => {
+    setPreferensi(prev => ({ ...prev, [criteriaId]: criteriaValueId }));
+  };
+
+  // Alur: buat session baru -> kirim semua bobot -> kirim preferensi (kalau ada) -> ambil hasil ranking
   const jalankanRekomendasi = async () => {
     try {
       setIsCalculating(true);
@@ -81,16 +103,26 @@ export const HalamanRekomendasi: React.FC = () => {
         criteriaList.map((c) => ({ criteriaId: c.id, nilaiBobot: bobot[c.id] ?? c.default_bobot }))
       );
 
+      // Preferensi bersifat opsional: kriteria yang tidak dipilih user tidak dikirim,
+      // sehingga tidak memfilter produk apapun untuk kriteria itu (lihat HAVING di view).
+      const preferenceIds = Object.values(preferensi)
+        .filter((v) => v !== '')
+        .map((v) => Number(v));
+      if (preferenceIds.length > 0) {
+        await submitAllPreferences(session.id, preferenceIds);
+      }
+
       const items = await getRecommendation(activeMethod, session.id);
       setHasil(
         items.map((item) => ({
-          rank: item.rank,
-          nilaiAkhir: item.nilai_akhir,
-          product: mapApiProductToProductData(item.product, brandMap.get(item.product.brands_id)),
+          rank: item.ranking,
+          nilaiAkhir: item.skor,
+          product: mapRecommendationItemToProductData(item),
         }))
       );
     } catch (err) {
-      setCalcError('Gagal menghitung rekomendasi. Pastikan semua bobot kriteria sudah terisi.');
+      console.error('Gagal menjalankan rekomendasi:', err);
+      setCalcError('Gagal menghitung rekomendasi. Coba longgarkan preferensi kamu atau pastikan semua bobot kriteria sudah terisi.');
       setHasil([]);
     } finally {
       setIsCalculating(false);
@@ -108,12 +140,13 @@ export const HalamanRekomendasi: React.FC = () => {
       const items = await getRecommendation(method, sessionId);
       setHasil(
         items.map((item) => ({
-          rank: item.rank,
-          nilaiAkhir: item.nilai_akhir,
-          product: mapApiProductToProductData(item.product, brandMap.get(item.product.brands_id)),
+          rank: item.ranking,
+          nilaiAkhir: item.skor,
+          product: mapRecommendationItemToProductData(item),
         }))
       );
     } catch (err) {
+      console.error('Gagal mengambil hasil metode', method, err);
       setCalcError('Gagal mengambil hasil untuk metode ini.');
     } finally {
       setIsCalculating(false);
@@ -127,21 +160,40 @@ export const HalamanRekomendasi: React.FC = () => {
   return (
     <div className="w-full bg-[#f4f6f9] font-mono min-h-screen py-6 md:py-10 text-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* HERO HEADER BANNER PANEL */}
         <div className="w-full bg-[#1e293b] border-4 border-black p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] text-white">
           <div className="max-w-2xl">
             <h1 className="text-2xl md:text-3xl font-black uppercase">Temukan Smartphone Impianmu</h1>
             <p className="text-xs text-slate-400 font-bold uppercase mt-1">
-              Geser prioritas bobot kepentingan tiap kriteria, lalu pilih metode SPK
+              Pilih preferensi spek (opsional), geser bobot prioritas, lalu pilih metode SPK
             </p>
           </div>
         </div>
 
+        {/* SEKSI: DROPDOWN PREFERENSI KRITERIA (FILTER OPSIONAL, DINAMIS DARI BACKEND) */}
+        {!isLoadingCriteria && !criteriaError && criteriaList.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {criteriaList.map((c) => (
+              <OptionBox
+                key={c.id}
+                label={c.nama}
+                placeholder={`-- PILIH ${c.nama.toUpperCase()} (OPSIONAL) --`}
+                options={(valuesByCriteria.get(c.id) ?? []).map((cv) => ({
+                  value: String(cv.id),
+                  label: cv.label,
+                }))}
+                currentValue={preferensi[c.id] ?? ''}
+                onValueChange={(value) => handlePreferensiChange(c.id, value)}
+              />
+            ))}
+          </div>
+        )}
+
         {/* SEKSI: SLIDER BOBOT KRITERIA (DINAMIS DARI BACKEND) */}
         <div className="bg-white border-4 border-black p-6 md:p-8 mb-12 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative">
-          
-          <button 
+
+          <button
             type="button"
             onClick={() => setShowGuide(true)}
             className="absolute top-4 right-4 bg-black text-white p-2 border-2 border-black font-black text-xs hover:bg-[#e53935] cursor-pointer shadow-[2px_2px_0px_rgba(0,0,0,0.2)] transition-all"
@@ -173,8 +225,8 @@ export const HalamanRekomendasi: React.FC = () => {
 
           {/* Tombol Jalankan Perhitungan SPK */}
           <div className="w-full flex justify-end mt-8">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={jalankanRekomendasi}
               disabled={isLoadingCriteria || isCalculating || criteriaList.length === 0}
               className="w-full md:w-64 py-3 bg-black hover:bg-stone-800 text-white font-black uppercase text-xs border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -189,7 +241,7 @@ export const HalamanRekomendasi: React.FC = () => {
           <h2 className="text-3xl font-black text-gray-500 uppercase tracking-wide">
             Hasil Rekomendasi
           </h2>
-          
+
           <div className="flex gap-4">
             {(['wp', 'saw', 'topsis'] as SpkMethod[]).map((method) => {
               const isSelected = activeMethod === method;
@@ -199,8 +251,8 @@ export const HalamanRekomendasi: React.FC = () => {
                   type="button"
                   onClick={() => handleChangeMethod(method)}
                   className={`px-8 py-2 font-bold text-xs uppercase border border-gray-400 rounded-md transition-all cursor-pointer ${
-                    isSelected 
-                      ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-sm' 
+                    isSelected
+                      ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-sm'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -217,7 +269,7 @@ export const HalamanRekomendasi: React.FC = () => {
 
         {!calcError && !isCalculating && sessionId === null && (
           <p className="text-center text-xs font-bold text-stone-500 uppercase mb-6">
-            Atur bobot kriteria di atas lalu klik "Cari Rekomendasi" untuk melihat hasil.
+            Atur bobot (dan preferensi bila perlu) di atas lalu klik "Cari Rekomendasi" untuk melihat hasil.
           </p>
         )}
 
@@ -244,9 +296,9 @@ export const HalamanRekomendasi: React.FC = () => {
       </div>
 
       {/* KOMPONEN DETAIL POP-UP MODAL */}
-      <ProductDetail 
-        product={productForModal} 
-        onClose={() => setSelectedProduct(null)} 
+      <ProductDetail
+        product={productForModal}
+        onClose={() => setSelectedProduct(null)}
       />
 
       {/* MODAL DIALOG ATURAN BOBOT BUKU PANDUAN */}
@@ -255,9 +307,9 @@ export const HalamanRekomendasi: React.FC = () => {
           <div className="bg-white border-4 border-black shadow-[8px_8px_0px_rgba(0,0,0,1)] p-6 max-w-lg w-full animate-fade-in">
             <div className="flex justify-between items-center border-b-4 border-black pb-2 mb-4">
               <h3 className="text-md font-black uppercase">📖 Aturan Bobot Kriteria</h3>
-              <button 
-                type="button" 
-                onClick={() => setShowGuide(false)} 
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
                 className="font-black text-lg hover:text-[#e53935] cursor-pointer"
               >
                 X
@@ -270,13 +322,16 @@ export const HalamanRekomendasi: React.FC = () => {
               <p className="border-b border-dashed border-stone-300 pb-2">
                 🟢 <span className="text-emerald-600">BENEFIT:</span> Semakin tinggi bobotnya, sistem makin memprioritaskan nilai kriteria yang paling besar (mis. RAM, Kamera, Baterai terbesar).
               </p>
+              <p className="border-b border-dashed border-stone-300 pb-2">
+                🔍 <span className="text-blue-600">PREFERENSI:</span> Kalau kamu pilih dropdown di atas (mis. "RAM &gt;= 8 GB"), produk yang tidak memenuhi akan disingkirkan sebelum ranking dihitung. Kosongkan kalau tidak ingin memfilter.
+              </p>
               <p>
-                Bobot dikirim ke sesi SPK kamu, lalu dihitung ulang setiap kamu berpindah metode WP / SAW / TOPSIS.
+                Bobot & preferensi dikirim ke sesi SPK kamu, lalu dihitung ulang setiap kamu berpindah metode WP / SAW / TOPSIS.
               </p>
             </div>
-            <button 
-              type="button" 
-              onClick={() => setShowGuide(false)} 
+            <button
+              type="button"
+              onClick={() => setShowGuide(false)}
               className="w-full mt-6 py-2.5 bg-black text-white font-black text-xs uppercase border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] cursor-pointer"
             >
               [ Saya Mengerti ]

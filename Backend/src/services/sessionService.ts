@@ -71,3 +71,43 @@ export const deletePembobotan = async (id: number) => {
     throw error;
   }
 };
+
+// ==== User Preferences (nested di dalam session) ====
+
+export const getUserPreferencesBySession = async (sessionId: number) => {
+  return db.userPreferences.findMany({
+    where: { recommendation_session_id: sessionId },
+    include: { criteria_value: { include: { criteria: true } } },
+  });
+};
+
+// Satu kriteria hanya boleh punya SATU preferensi aktif per session.
+// Kalau user pilih ulang (ganti dropdown), preferensi lama untuk
+// kriteria yang sama dihapus dulu supaya tidak ada duplikat/ambigu.
+export const setUserPreference = async (sessionId: number, criteriaValueId: number) => {
+  const criteriaValue = await db.criteriaValue.findUnique({ where: { id: criteriaValueId } });
+  if (!criteriaValue) throw new SessionError(404, 'Criteria value tidak ditemukan');
+
+  await db.userPreferences.deleteMany({
+    where: {
+      recommendation_session_id: sessionId,
+      criteria_value: { criteria_id: criteriaValue.criteria_id },
+    },
+  });
+
+  return db.userPreferences.create({
+    data: {
+      recommendation_session_id: sessionId,
+      criteria_value_id: criteriaValueId,
+    },
+  });
+};
+
+export const deleteUserPreference = async (id: number) => {
+  try {
+    await db.userPreferences.delete({ where: { id } });
+  } catch (error: any) {
+    if (error.code === 'P2025') throw new SessionError(404, 'Preferensi tidak ditemukan');
+    throw error;
+  }
+};

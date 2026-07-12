@@ -4,12 +4,32 @@ SELECT
   `p`.`id` AS `product_id`,
   `p`.`nama` AS `nama_produk`,
   `b`.`nama` AS `nama_brand`,
-  `cv_harga`.`nilai` AS `c1`,
-  `cv_ram`.`nilai` AS `c2`,
-  `cv_penyimpanan`.`nilai` AS `c3`,
-  `cv_baterai`.`nilai` AS `c4`,
-  `cv_os`.`nilai` AS `c5`,
-  `cv_kam`.`nilai` AS `c6`,
+CASE
+    WHEN `p`.`harga` <= 3000000 THEN 1
+    WHEN `p`.`harga` <= 4500000 THEN 2
+    WHEN `p`.`harga` <= 6500000 THEN 3
+    ELSE 4
+  END AS `c1`,
+CASE
+    WHEN `p`.`ram` < 8 THEN 1
+    ELSE 2
+  END AS `c2`,
+CASE
+    WHEN `p`.`penyimpanan` < 256 THEN 1
+    ELSE 2
+  END AS `c3`,
+CASE
+    WHEN `p`.`baterai` < 5000 THEN 1
+    ELSE 2
+  END AS `c4`,
+CASE
+    WHEN `p`.`update_os` < 3 THEN 1
+    ELSE 2
+  END AS `c5`,
+CASE
+    WHEN `p`.`resolusi_kamera` <= 50 THEN 1
+    ELSE 2
+  END AS `c6`,
   MAX(
     CASE
       WHEN `pemb`.`criteria_id` = 1 THEN `pemb`.`nilai_bobot`
@@ -39,46 +59,58 @@ SELECT
     CASE
       WHEN `pemb`.`criteria_id` = 6 THEN `pemb`.`nilai_bobot`
     END
-  ) AS `bobot_c6`
+  ) AS `bobot_c6`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 1 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c1`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 2 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c2`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 3 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c3`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 4 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c4`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 5 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c5`,
+  MAX(
+    CASE
+      WHEN `cv_pref`.`criteria_id` = 6 THEN `cv_pref`.`nilai`
+    END
+  ) AS `pref_c6`
 FROM
   (
     (
       (
         (
           (
-            (
-              (
-                (
-                  (
-                    `hp`.`recommendation_session` AS `rs`
-                    JOIN `hp`.`user` AS `u` ON (`rs`.`user_id` = `u`.`id`)
-                  )
-                  JOIN `hp`.`products` AS `p`
-                )
-                JOIN `hp`.`brands` AS `b` ON (`p`.`brands_id` = `b`.`id`)
-              )
-              JOIN `hp`.`pembobotan` AS `pemb` ON (`rs`.`id` = `pemb`.`recommendation_session_id`)
-            )
-            JOIN `hp`.`criteria_value` AS `cv_harga` ON (`p`.`harga` = `cv_harga`.`id`)
+            `hp`.`recommendation_session` AS `rs`
+            JOIN `hp`.`user` AS `u` ON `rs`.`user_id` = `u`.`id`
           )
-          JOIN `hp`.`criteria_value` AS `cv_ram` ON (`p`.`ram` = `cv_ram`.`id`)
+          JOIN `hp`.`products` AS `p` ON 1 = 1
         )
-        JOIN `hp`.`criteria_value` AS `cv_penyimpanan` ON (`p`.`penyimpanan` = `cv_penyimpanan`.`id`)
+        LEFT JOIN `hp`.`pembobotan` AS `pemb` ON `rs`.`id` = `pemb`.`recommendation_session_id`
       )
-      JOIN `hp`.`criteria_value` AS `cv_baterai` ON (`p`.`baterai` = `cv_baterai`.`id`)
+      LEFT JOIN `hp`.`user_preferences` AS `pref` ON `rs`.`id` = `pref`.`recommendation_session_id`
     )
-    JOIN `hp`.`criteria_value` AS `cv_os` ON (`p`.`update_os` = `cv_os`.`id`)
+    LEFT JOIN `hp`.`criteria_value` AS `cv_pref` ON `pref`.`criteria_value_id` = `cv_pref`.`id`
   )
-  JOIN `hp`.`criteria_value` AS `cv_kam` ON (`p`.`resolusi_kamera` = `cv_kam`.`id`)
+  LEFT JOIN `hp`.`brands` AS `b` ON `p`.`brands_id` = `b`.`id`
 GROUP BY
   `rs`.`id`,
   `u`.`nama`,
   `p`.`id`,
   `p`.`nama`,
-  `b`.`nama`,
-  `cv_harga`.`nilai`,
-  `cv_ram`.`nilai`,
-  `cv_penyimpanan`.`nilai`,
-  `cv_baterai`.`nilai`,
-  `cv_os`.`nilai`,
-  `cv_kam`.`nilai`
+  `b`.`nama`

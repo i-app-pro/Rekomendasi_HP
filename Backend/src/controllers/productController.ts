@@ -5,6 +5,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 1000;
+
     const brandsIdRaw = req.query.brands_id;
     const brandsId = Array.isArray(brandsIdRaw) ? brandsIdRaw[0] : brandsIdRaw;
 

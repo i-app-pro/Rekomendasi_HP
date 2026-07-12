@@ -1,11 +1,27 @@
 import { Request, Response } from 'express';
 import * as sessionService from '../services/sessionService';
 
+// Helper kecil: ambil user dari req (sudah di-set oleh middleware `authenticate`)
+function getAuthUser(req: Request): { id: number; role: string } {
+  return (req as any).user;
+}
+
 export const getAllSessions = async (req: Request, res: Response) => {
   try {
-    const userIdRaw = req.query.user_id;
-    const userId = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
-    const data = await sessionService.getAllSessions(userId ? Number(userId as string) : undefined);
+    const authUser = getAuthUser(req);
+
+    // Customer hanya boleh lihat sesi miliknya sendiri.
+    // Admin boleh filter by user_id (query) atau lihat semua kalau tidak diisi.
+    let userId: number | undefined;
+    if (authUser.role === 'admin') {
+      const userIdRaw = req.query.user_id;
+      const raw = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
+      userId = raw ? Number(raw as string) : undefined;
+    } else {
+      userId = authUser.id;
+    }
+
+    const data = await sessionService.getAllSessions(userId);
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ message: 'Gagal mengambil data session', error: error.message });
@@ -14,7 +30,14 @@ export const getAllSessions = async (req: Request, res: Response) => {
 
 export const getSessionById = async (req: Request, res: Response) => {
   try {
+    const authUser = getAuthUser(req);
     const data = await sessionService.getSessionById(Number(req.params.id));
+
+    // Cegah IDOR: customer hanya boleh akses sesi miliknya sendiri.
+    if (authUser.role !== 'admin' && data.user_id !== authUser.id) {
+      return res.status(403).json({ message: 'Kamu tidak punya akses ke session ini' });
+    }
+
     res.json(data);
   } catch (error: any) {
     if (error instanceof sessionService.SessionError) {
@@ -26,9 +49,10 @@ export const getSessionById = async (req: Request, res: Response) => {
 
 export const createSession = async (req: Request, res: Response) => {
   try {
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ message: 'user_id wajib diisi' });
-    const data = await sessionService.createSession({ user_id: Number(user_id) });
+    const authUser = getAuthUser(req);
+    // user_id SELALU dari token, bukan dari body — mencegah user membuat
+    // sesi atas nama user lain.
+    const data = await sessionService.createSession({ user_id: authUser.id });
     res.status(201).json(data);
   } catch (error: any) {
     res.status(500).json({ message: 'Gagal membuat session', error: error.message });
@@ -37,7 +61,16 @@ export const createSession = async (req: Request, res: Response) => {
 
 export const deleteSession = async (req: Request, res: Response) => {
   try {
-    await sessionService.deleteSession(Number(req.params.id));
+    const authUser = getAuthUser(req);
+    const sessionId = Number(req.params.id);
+
+    // Fetch dulu untuk cek kepemilikan sebelum dihapus.
+    const existing = await sessionService.getSessionById(sessionId);
+    if (authUser.role !== 'admin' && existing.user_id !== authUser.id) {
+      return res.status(403).json({ message: 'Kamu tidak punya akses ke session ini' });
+    }
+
+    await sessionService.deleteSession(sessionId);
     res.json({ message: 'Session berhasil dihapus' });
   } catch (error: any) {
     if (error instanceof sessionService.SessionError) {
@@ -47,7 +80,7 @@ export const deleteSession = async (req: Request, res: Response) => {
   }
 };
 
-// ==== Pembobotan (nested) ====
+// ==== Pembobotan (nested) — tidak diubah untuk sekarang, lihat catatan di bawah ====
 
 export const getPembobotanBySession = async (req: Request, res: Response) => {
   try {
@@ -102,5 +135,62 @@ export const deletePembobotan = async (req: Request, res: Response) => {
       return res.status(error.statusCode).json({ message: error.message });
     }
     res.status(500).json({ message: 'Gagal menghapus pembobotan', error: error.message });
+  }
+};
+
+export const getPreferencesBySession = async (req: Request, res: Response) => {
+  try {
+    const authUser = getAuthUser(req);
+    const sessionId = Number(req.params.id);
+    const session = await sessionService.getSessionById(sessionId);
+
+    if (authUser.role !== 'admin' && session.user_id !== authUser.id) {
+      return res.status(403).json({ message: 'Kamu tidak punya akses ke session ini' });
+    }
+
+    const data = await sessionService.getUserPreferencesBySession(sessionId);
+    res.json(data);
+  } catch (error: any) {
+    if (error instanceof sessionService.SessionError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Gagal mengambil preferensi', error: error.message });
+  }
+};
+
+export const setPreference = async (req: Request, res: Response) => {
+  try {
+    const authUser = getAuthUser(req);
+    const sessionId = Number(req.params.id);
+    const session = await sessionService.getSessionById(sessionId);
+
+    if (authUser.role !== 'admin' && session.user_id !== authUser.id) {
+      return res.status(403).json({ message: 'Kamu tidak punya akses ke session ini' });
+    }
+
+    const { criteria_value_id } = req.body;
+    if (!criteria_value_id) {
+      return res.status(400).json({ message: 'criteria_value_id wajib diisi' });
+    }
+
+    const data = await sessionService.setUserPreference(sessionId, Number(criteria_value_id));
+    res.status(201).json(data);
+  } catch (error: any) {
+    if (error instanceof sessionService.SessionError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Gagal menyimpan preferensi', error: error.message });
+  }
+};
+
+export const deletePreference = async (req: Request, res: Response) => {
+  try {
+    await sessionService.deleteUserPreference(Number(req.params.preferenceId));
+    res.json({ message: 'Preferensi berhasil dihapus' });
+  } catch (error: any) {
+    if (error instanceof sessionService.SessionError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Gagal menghapus preferensi', error: error.message });
   }
 };

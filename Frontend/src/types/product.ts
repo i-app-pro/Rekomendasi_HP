@@ -56,6 +56,7 @@ export interface ApiProduct {
 // Placeholder gambar produk (backend tidak menyimpan foto produk).
 // Ganti / tambahkan mapping per-brand di sini kalau nanti ada asset resmi.
 import placeholderImg from "../assets/brand/reko.png";
+import type { RecommendationItem } from "./spk";
 
 // Mengubah data mentah dari backend (ApiProduct) menjadi ProductData
 // yang dipahami oleh komponen UI (CardProduk, CardDetail, DetailProduk).
@@ -79,5 +80,27 @@ export function mapApiProductToProductData(p: ApiProduct, resolvedBrand?: Brand)
     display: p.display,
     imageUrl: placeholderImg,
     tahunrilis: p.tahun_rilis ? new Date(p.tahun_rilis).getFullYear().toString() : undefined,
+  };
+}
+
+// Mengubah 1 item hasil SAW/WP/TOPSIS (bentuk FLAT dari recommendationService
+// backend: ranking, skor, product_id, nama_hp, brand, foto, harga, spesifikasi)
+// menjadi ProductData yang dipahami komponen UI (CardProduk, CardDetail).
+// DITAMBAHKAN — sebelumnya HalamanRekomendasi.tsx salah pakai
+// mapApiProductToProductData() dengan asumsi bentuk data nested "product"
+// yang sebenarnya tidak pernah dikirim backend.
+export function mapRecommendationItemToProductData(item: RecommendationItem): ProductData {
+  return {
+    id: item.product_id,
+    nama: item.nama_hp,
+    brand: item.brand,
+    harga: item.harga,
+    ram: `${item.spesifikasi.ram} GB`,
+    penyimpanan: `${item.spesifikasi.penyimpanan} GB`,
+    kamera: `${item.spesifikasi.kamera} MP`,
+    baterai: `${item.spesifikasi.baterai} mAh`,
+    updateOs: `${item.spesifikasi.update_os} Tahun`,
+    chipset: item.spesifikasi.chipset,
+    imageUrl: item.foto || placeholderImg,
   };
 }

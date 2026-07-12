@@ -33,3 +33,24 @@ export async function submitAllPembobotan(
     await setPembobotan(sessionId, item.criteriaId, item.nilaiBobot);
   }
 }
+
+
+// POST /api/sessions/:id/preferences  { criteria_value_id }
+export async function setPreference(
+  sessionId: number,
+  criteriaValueId: number
+): Promise<void> {
+  await API.post(`/sessions/${sessionId}/preferences`, {
+    criteria_value_id: criteriaValueId,
+  });
+}
+
+// Kirim semua preferensi yang dipilih user sekaligus (dipanggil berurutan per kriteria)
+export async function submitAllPreferences(
+  sessionId: number,
+  criteriaValueIds: number[]
+): Promise<void> {
+  for (const id of criteriaValueIds) {
+    await setPreference(sessionId, id);
+  }
+}

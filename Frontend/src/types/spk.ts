@@ -32,6 +32,14 @@ export interface Pembobotan {
   criteria?: Criteria;
 }
 
+// GET /api/sessions/:id/preferences
+export interface SpkPreference {
+  id: number;
+  session_id: number;
+  criteria_value_id: number;
+  criteriaValue?: CriteriaValue;
+}
+
 // Bentuk objek "spesifikasi" di dalam tiap item hasil rekomendasi
 // (lihat buildCard() di recommendationService.ts backend)
 export interface RecommendationSpesifikasi {

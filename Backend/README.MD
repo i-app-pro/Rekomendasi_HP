@@ -83,6 +83,12 @@ Untuk membuat akun admin: register seperti biasa, lalu ubah `role` jadi `admin` 
 | 46 | `/api/founders/:id` | PUT | ✅ | Admin only |
 | 47 | `/api/founders/:id` | DELETE | ✅ | Admin only |
 
+MethodEndpointFungsi
+GET/api/sessions/:id/preferencesAmbil semua preferensi yang tersimpan untuk 1 session
+POST/api/sessions/:id/preferencesSimpan/set preferensi baru untuk 1 kriteria di session itu (body: { criteria_value_id })
+DELETE/api/sessions/preferences/:preferenceId Hapus 1 preferensi tertentu
+
+
 ## Contoh Body Request
 
 ### Auth

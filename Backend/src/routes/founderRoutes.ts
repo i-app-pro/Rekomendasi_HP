@@ -4,6 +4,7 @@ import {
 } from '../controllers/founderController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { isAdmin } from '../middlewares/roleMiddleware';
+import { upload } from '../middlewares/uploadMiddleware';
 
 const router = Router();
 
@@ -12,8 +13,8 @@ router.get('/', getAllFounders);
 router.get('/:id', getFounderById);
 
 // Admin only
-router.post('/', authenticate, isAdmin, createFounder);
-router.put('/:id', authenticate, isAdmin, updateFounder);
+router.post('/', authenticate, isAdmin, upload.single('foto'), createFounder);
+router.put('/:id', authenticate, isAdmin, upload.single('foto'), updateFounder);
 router.delete('/:id', authenticate, isAdmin, deleteFounder);
 
 export default router;

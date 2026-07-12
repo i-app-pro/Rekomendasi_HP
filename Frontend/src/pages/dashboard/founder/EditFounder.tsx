@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Founder, FounderPayload } from '../../../types/founder';
+import { resolveImageUrl } from '../../../lib/resolveImageUrl';
 
 interface EditFounderProps {
   isOpen: boolean;
@@ -8,22 +9,50 @@ interface EditFounderProps {
   founderData: Founder | null;
 }
 
+type FounderFormFields = Omit<FounderPayload, 'fotoFile'>;
+
+const emptyForm: FounderFormFields = {
+  nama: '', status: 'Mahasiswa', universitas: '', framework: '',
+  username_ig: '', email: '', github: '', foto: ''
+};
+
 export default function EditFounder({ isOpen, onClose, onUpdate, founderData }: EditFounderProps) {
-  const [formData, setFormData] = useState<FounderPayload>({
-    nama: '', status: 'Mahasiswa', universitas: '', framework: '',
-    username_ig: '', email: '', github: ''
-  });
+  const [formData, setFormData] = useState<FounderFormFields>(emptyForm);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fotoMode, setFotoMode] = useState<'url' | 'file'>('url');
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (founderData) {
       const { id: _id, ...rest } = founderData;
-      setFormData(rest);
+      setFormData({ ...rest, foto: rest.foto ?? '' });
+      setFotoFile(null);
+      setFotoMode('url');
     }
   }, [founderData, isOpen]);
 
+  useEffect(() => {
+    if (fotoFile) {
+      const objectUrl = URL.createObjectURL(fotoFile);
+      setPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+    setPreviewUrl(resolveImageUrl(formData.foto));
+  }, [fotoFile, formData.foto]);
+
   if (!isOpen || !founderData) return null;
+
+  const handleFotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setFotoFile(file);
+  };
+
+  const switchFotoMode = (mode: 'url' | 'file') => {
+    setFotoMode(mode);
+    if (mode === 'url') setFotoFile(null);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,7 +63,7 @@ export default function EditFounder({ isOpen, onClose, onUpdate, founderData }: 
     try {
       setIsSaving(true);
       setError(null);
-      await onUpdate(founderData.id, formData);
+      await onUpdate(founderData.id, { ...formData, fotoFile: fotoMode === 'file' ? fotoFile : null });
       onClose();
     } catch (err) {
       setError('Gagal update founder. Coba lagi.');
@@ -89,6 +118,28 @@ export default function EditFounder({ isOpen, onClose, onUpdate, founderData }: 
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">Username GitHub</label>
               <input type="text" name="github" value={formData.github} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">Foto (opsional)</label>
+              <div className="flex gap-2 mb-2">
+                <button type="button" onClick={() => switchFotoMode('url')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${fotoMode === 'url' ? 'bg-[#1e2530] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  URL
+                </button>
+                <button type="button" onClick={() => switchFotoMode('file')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${fotoMode === 'file' ? 'bg-[#1e2530] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  Upload File
+                </button>
+              </div>
+
+              {fotoMode === 'url' ? (
+                <input type="text" name="foto" value={formData.foto ?? ''} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://..." />
+              ) : (
+                <input type="file" accept="image/*" onChange={handleFotoFileChange} className="w-full text-sm" />
+              )}
+              {previewUrl && (
+                <img src={previewUrl} alt="Preview" className="mt-2 w-20 h-20 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              )}
             </div>
           </div>
 

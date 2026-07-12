@@ -51,12 +51,16 @@ export interface ApiProduct {
   display: string;
   brands_id: number;
   brand?: Brand;
+  // Bisa berisi path relatif hasil upload file (mis. "/uploads/xxx.jpg") ATAU
+  // URL gambar penuh. Selalu tampilkan lewat resolveImageUrl(), jangan langsung
+  // dipakai sebagai src <img>.
+  foto?: string | null;
 }
 
-// Placeholder gambar produk (backend tidak menyimpan foto produk).
-// Ganti / tambahkan mapping per-brand di sini kalau nanti ada asset resmi.
+// Placeholder gambar produk dipakai kalau produk belum punya foto sama sekali.
 import placeholderImg from "../assets/brand/reko.png";
 import type { RecommendationItem } from "./spk";
+import { resolveImageUrl } from "../lib/resolveImageUrl";
 
 // Mengubah data mentah dari backend (ApiProduct) menjadi ProductData
 // yang dipahami oleh komponen UI (CardProduk, CardDetail, DetailProduk).
@@ -78,7 +82,7 @@ export function mapApiProductToProductData(p: ApiProduct, resolvedBrand?: Brand)
     os: p.os,
     fastCharging: p.fast_charging,
     display: p.display,
-    imageUrl: placeholderImg,
+    imageUrl: resolveImageUrl(p.foto) || placeholderImg,
     tahunrilis: p.tahun_rilis ? new Date(p.tahun_rilis).getFullYear().toString() : undefined,
   };
 }
@@ -86,9 +90,6 @@ export function mapApiProductToProductData(p: ApiProduct, resolvedBrand?: Brand)
 // Mengubah 1 item hasil SAW/WP/TOPSIS (bentuk FLAT dari recommendationService
 // backend: ranking, skor, product_id, nama_hp, brand, foto, harga, spesifikasi)
 // menjadi ProductData yang dipahami komponen UI (CardProduk, CardDetail).
-// DITAMBAHKAN — sebelumnya HalamanRekomendasi.tsx salah pakai
-// mapApiProductToProductData() dengan asumsi bentuk data nested "product"
-// yang sebenarnya tidak pernah dikirim backend.
 export function mapRecommendationItemToProductData(item: RecommendationItem): ProductData {
   return {
     id: item.product_id,
@@ -101,6 +102,6 @@ export function mapRecommendationItemToProductData(item: RecommendationItem): Pr
     baterai: `${item.spesifikasi.baterai} mAh`,
     updateOs: `${item.spesifikasi.update_os} Tahun`,
     chipset: item.spesifikasi.chipset,
-    imageUrl: item.foto || placeholderImg,
+    imageUrl: resolveImageUrl(item.foto) || placeholderImg,
   };
 }

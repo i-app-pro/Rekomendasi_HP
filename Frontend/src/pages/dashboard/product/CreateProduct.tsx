@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Brand } from '../../../types/product';
 import type { ProductPayload } from '../../../api/products';
 import { getBrands } from '../../../api/brands';
+import { resolveImageUrl } from '../../../lib/resolveImageUrl';
 
 interface CreateProductProps {
   isOpen: boolean;
@@ -9,17 +10,31 @@ interface CreateProductProps {
   onSave: (data: ProductPayload) => Promise<void> | void;
 }
 
-const emptyForm: ProductPayload = {
+type ProductFormFields = Omit<ProductPayload, 'fotoFile'>;
+
+const emptyForm: ProductFormFields = {
   nama: '', harga: 0, ram: 0, penyimpanan: 0, baterai: 0, update_os: 0,
   resolusi_kamera: 0, chipset: '', os: '', tahun_rilis: '', fast_charging: '',
-  display: '', brands_id: 0,
+  display: '', brands_id: 0, foto: '',
 };
 
 export default function CreateProduct({ isOpen, onClose, onSave }: CreateProductProps) {
-  const [formData, setFormData] = useState<ProductPayload>(emptyForm);
+  const [formData, setFormData] = useState<ProductFormFields>(emptyForm);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fotoMode, setFotoMode] = useState<'url' | 'file'>('url');
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (fotoFile) {
+      const objectUrl = URL.createObjectURL(fotoFile);
+      setPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+    setPreviewUrl(resolveImageUrl(formData.foto));
+  }, [fotoFile, formData.foto]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,6 +55,16 @@ export default function CreateProduct({ isOpen, onClose, onSave }: CreateProduct
     setFormData({ ...formData, [name]: numericFields.includes(name) ? Number(value) : value });
   };
 
+  const handleFotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setFotoFile(file);
+  };
+
+  const switchFotoMode = (mode: 'url' | 'file') => {
+    setFotoMode(mode);
+    if (mode === 'url') setFotoFile(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -48,9 +73,12 @@ export default function CreateProduct({ isOpen, onClose, onSave }: CreateProduct
       const payload: ProductPayload = {
         ...formData,
         tahun_rilis: formData.tahun_rilis ? new Date(formData.tahun_rilis).toISOString() : new Date().toISOString(),
+        fotoFile: fotoMode === 'file' ? fotoFile : null,
       };
       await onSave(payload);
       setFormData(emptyForm);
+      setFotoFile(null);
+      setFotoMode('url');
       onClose();
     } catch (err) {
       setError('Gagal menyimpan produk. Cek kembali data yang diisi.');
@@ -128,6 +156,28 @@ export default function CreateProduct({ isOpen, onClose, onSave }: CreateProduct
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Fast Charging</label>
               <input type="text" name="fast_charging" value={formData.fast_charging} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 25W" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">Foto Produk (opsional)</label>
+              <div className="flex gap-2 mb-2">
+                <button type="button" onClick={() => switchFotoMode('url')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${fotoMode === 'url' ? 'bg-[#1e2530] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  URL
+                </button>
+                <button type="button" onClick={() => switchFotoMode('file')}
+                  className={`px-3 py-1 rounded-md text-xs font-bold cursor-pointer ${fotoMode === 'file' ? 'bg-[#1e2530] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  Upload File
+                </button>
+              </div>
+
+              {fotoMode === 'url' ? (
+                <input type="text" name="foto" value={formData.foto} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://..." />
+              ) : (
+                <input type="file" accept="image/*" onChange={handleFotoFileChange} className="w-full text-sm" />
+              )}
+              {previewUrl && (
+                <img src={previewUrl} alt="Preview" className="mt-2 w-20 h-20 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              )}
             </div>
           </div>
 

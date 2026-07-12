@@ -5,9 +5,10 @@ import type { ApiProduct, Brand } from '../../../types/product';
 import { getProducts, createProduct, updateProduct, deleteProduct, type ProductPayload } from '../../../api/products';
 import { getBrands } from '../../../api/brands';
 import { getErrorMessage } from '../../../lib/errorMessage';
+import { resolveImageUrl } from '../../../lib/resolveImageUrl';
 
 export default function ProductPage() {
-  const columns = ['ID', 'Nama', 'Brand', 'Harga', 'RAM', 'Penyimpanan', 'Chipset', 'Aksi'];
+  const columns = ['ID', 'Foto', 'Nama', 'Brand', 'Harga', 'RAM', 'Penyimpanan', 'Chipset', 'Aksi'];
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -95,11 +96,18 @@ export default function ProductPage() {
               </thead>
               <tbody>
                 {products.length === 0 && (
-                  <tr><td colSpan={8} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data produk.</td></tr>
+                  <tr><td colSpan={9} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data produk.</td></tr>
                 )}
                 {products.map((row) => (
                   <tr key={row.id} className="bg-white text-slate-800 font-semibold shadow-sm border border-slate-100 hover:bg-slate-50">
                     <td className="px-6 py-4 rounded-l-xl border-y border-l border-slate-200">{row.id}</td>
+                    <td className="px-6 py-4 border-y border-slate-200">
+                      {resolveImageUrl(row.foto) ? (
+                        <img src={resolveImageUrl(row.foto)} alt={row.nama} className="w-10 h-10 rounded-lg object-cover border border-slate-200" />
+                      ) : (
+                        <span className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs text-slate-400">-</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 border-y border-slate-200">{row.nama}</td>
                     <td className="px-6 py-4 border-y border-slate-200">{brandName(row)}</td>
                     <td className="px-6 py-4 border-y border-slate-200">Rp {row.harga.toLocaleString('id-ID')}</td>
@@ -137,6 +145,9 @@ export default function ProductPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
+                  {resolveImageUrl(row.foto) && (
+                    <img src={resolveImageUrl(row.foto)} alt={row.nama} className="w-full h-32 rounded-lg object-cover border border-slate-200 mb-1" />
+                  )}
                   <span className="text-lg font-black text-slate-800">{row.nama}</span>
                   <span className="text-sm font-medium text-slate-500">{brandName(row)} — Rp {row.harga.toLocaleString('id-ID')}</span>
                   <span className="text-xs text-slate-400">{row.ram}GB / {row.penyimpanan}GB · {row.chipset} · {row.baterai}mAh</span>

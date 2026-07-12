@@ -4,9 +4,10 @@ import EditFounder from './EditFounder';
 import type { Founder, FounderPayload } from '../../../types/founder';
 import { getFounders, createFounder, updateFounder, deleteFounder } from '../../../api/founders';
 import { getErrorMessage } from '../../../lib/errorMessage';
+import { resolveImageUrl } from '../../../lib/resolveImageUrl';
 
 export default function FounderPage() {
-  const columns = ['ID', 'Nama', 'Status', 'Universitas', 'Framework', 'Instagram', 'Email', 'GitHub', 'Aksi'];
+  const columns = ['ID', 'Foto', 'Nama', 'Status', 'Universitas', 'Framework', 'Instagram', 'Email', 'GitHub', 'Aksi'];
 
   const [founders, setFounders] = useState<Founder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,11 +91,18 @@ export default function FounderPage() {
               </thead>
               <tbody>
                 {founders.length === 0 && (
-                  <tr><td colSpan={9} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data founder.</td></tr>
+                  <tr><td colSpan={10} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data founder.</td></tr>
                 )}
                 {founders.map((row) => (
                   <tr key={row.id} className="bg-white text-slate-800 font-semibold shadow-sm border border-slate-100 hover:bg-slate-50">
                     <td className="px-6 py-4 rounded-l-xl border-y border-l border-slate-200">{row.id}</td>
+                    <td className="px-6 py-4 border-y border-slate-200">
+                      {resolveImageUrl(row.foto) ? (
+                        <img src={resolveImageUrl(row.foto)} alt={row.nama} className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                      ) : (
+                        <span className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs text-slate-400">-</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 border-y border-slate-200">{row.nama}</td>
                     <td className="px-6 py-4 border-y border-slate-200">{row.status}</td>
                     <td className="px-6 py-4 border-y border-slate-200">{row.universitas}</td>
@@ -133,6 +141,9 @@ export default function FounderPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
+                  {resolveImageUrl(row.foto) && (
+                    <img src={resolveImageUrl(row.foto)} alt={row.nama} className="w-14 h-14 rounded-full object-cover border border-slate-200 mb-1" />
+                  )}
                   <span className="text-lg font-black text-slate-800">{row.nama}</span>
                   <span className="text-sm font-medium text-slate-500">{row.status} — {row.universitas}</span>
                   <span className="text-sm font-medium text-slate-500">{row.framework}</span>

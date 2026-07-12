@@ -32,17 +32,20 @@ export default function LoginForm() {
   const onSubmit = async (data: FormData) => {
     try {
       const user = await login({ email: data.email, password: data.password });
-      // Admin diarahkan ke beranda juga (dashboard admin belum tersedia di sisi FE),
-      // customer langsung ke beranda.
-      navigate(user.role === "admin" ? "/" : "/");
+      
+      // FIX: Admin ke /dashboard, customer ke /
+      if (user?.role === "admin") {
+        navigate("/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch {
-      // Pesan error sudah ditangani & disimpan di store (lihat `error` di bawah)
+      // Pesan error sudah ditangani & disimpan di store
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col w-full">
-      
       {/* Judul Form */}
       <h2 className="text-3xl md:text-4xl font-black text-center text-black tracking-wide uppercase mb-6 md:mb-8">
         LOGIN
@@ -66,7 +69,7 @@ export default function LoginForm() {
         error={errors.password?.message}
       />
 
-      {/* Pesan error dari backend (mis. email/password salah) */}
+      {/* Pesan error dari backend */}
       {error && (
         <p className="text-red-600 text-xs md:text-sm font-semibold mb-4 -mt-2 text-center">
           {error}
@@ -91,10 +94,9 @@ export default function LoginForm() {
           label={isLoading ? "MEMPROSES..." : "LOGIN"}
           variant="primary" 
           disabled={isLoading}
-          className="w-full" // w-full memastikan tombol melebar penuh di dalam card merah melengkung
+          className="w-full"
         />
       </div>
-
     </form>
   );
 }

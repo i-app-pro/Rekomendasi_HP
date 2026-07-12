@@ -114,7 +114,7 @@ model Pembobotan {
 
 model UserPreferences {
   id                        Int                   @id @default(autoincrement())
-  created_at                DateTime              @db.DateTime(0)
+  created_at                DateTime              @default(now()) @db.DateTime(0)
   updated_at                DateTime              @updatedAt @db.DateTime(0)
   recommendation_session_id Int
   criteria_value_id         Int

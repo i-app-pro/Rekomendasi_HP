@@ -14,6 +14,7 @@ const getSpesifikasi = async (productIds: number[]) => {
 const buildCard = (p: any, extra: Record<string, any>) => ({
   ...extra,
   foto: p?.foto ?? null,
+  harga: p?.harga ?? 0, // DITAMBAHKAN: sebelumnya tidak ada, padahal ProductData di frontend wajib butuh ini
   spesifikasi: {
     ram: p?.ram ?? '-',
     penyimpanan: p?.penyimpanan ?? '-',
@@ -90,9 +91,9 @@ export const getRekomendasiTOPSIS = async (sessionId: number) => {
   );
 };
 
-// Ditambahkan: default export supaya cocok dengan cara import di
-// recommendationController.ts (`import recommendationService from '...'`).
-// Named export di atas tetap dipertahankan kalau ada file lain yang pakai itu.
+// Default export supaya cocok dengan cara import di recommendationController.ts
+// (`import recommendationService from '...'`). Named export di atas tetap
+// dipertahankan kalau ada file lain yang pakai itu.
 const recommendationService = {
   getRekomendasiSAW,
   getRekomendasiWP,

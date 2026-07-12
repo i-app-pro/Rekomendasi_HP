@@ -1,5 +1,3 @@
-import type { ApiProduct } from "./product";
-
 export type Atribut = "cost" | "benefit";
 
 // GET /api/criteria
@@ -34,13 +32,31 @@ export interface Pembobotan {
   criteria?: Criteria;
 }
 
+// Bentuk objek "spesifikasi" di dalam tiap item hasil rekomendasi
+// (lihat buildCard() di recommendationService.ts backend)
+export interface RecommendationSpesifikasi {
+  ram: number | string;
+  penyimpanan: number | string;
+  baterai: number | string;
+  kamera: number | string;
+  chipset: string;
+  update_os: number | string;
+}
+
 // GET /api/recommendation/saw|wp|topsis?session_id=<id>
-// ASUMSI bentuk item hasil ranking. Backend SPK biasanya mengembalikan
-// array berisi data produk + skor akhir + urutan ranking. Kalau field
-// aslinya berbeda (mis. "nilai_preferensi" jadi "score"), cukup sesuaikan
-// interface ini + adapter di src/api/recommendation.ts.
+// Bentuk asli PERSIS sesuai recommendationService.ts (buildCard) di backend —
+// flat (bukan nested "product"), dan field "nilai_s"/"d_plus"/"d_minus"
+// cuma muncul tergantung metode (WP / TOPSIS).
 export interface RecommendationItem {
-  rank: number;
-  product: ApiProduct;
-  nilai_akhir: number;
+  ranking: number;
+  skor: number;
+  product_id: number;
+  nama_hp: string;
+  brand: string;
+  foto: string | null;
+  harga: number;
+  spesifikasi: RecommendationSpesifikasi;
+  nilai_s?: number;   // hanya ada di response WP
+  d_plus?: number;    // hanya ada di response TOPSIS
+  d_minus?: number;   // hanya ada di response TOPSIS
 }

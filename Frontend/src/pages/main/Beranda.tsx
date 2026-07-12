@@ -1,22 +1,62 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ProductCard from '../../components/CardProduk';
-import type { ProductData } from '../../types/product'; 
-
-// Dummy data untuk mengisi 8 slot produk sesuai layout gambar
-const dummyProducts: ProductData[] = Array(8).fill({
-  id: "1",
-  nama: "iphone 16 pro max",
-  brand: "Iphone",
-  harga: 21000000,
-  ram: "8 GB",
-  penyimpanan: "256GB/512GB/1TB",
-  kamera: "120 MP",
-  baterai: "4685 mAh",
-  
-  imageUrl: "src/assets/brand/reko.png" // Sesuaikan path asset mockup gawai Anda
-}).map((item, index) => ({ ...item, id: index.toString() }));
+import { ProductDetail } from '../../components/CardDetail';
+import type { ProductData, Brand } from '../../types/product';
+import { mapApiProductToProductData } from '../../types/product';
+import { getProducts } from '../../api/products';
+import { getBrands } from '../../api/brands';
 
 export const Beranda: React.FC = () => {
+  const [products, setProducts] = useState<ProductData[]>([]);
+  const [latestYear, setLatestYear] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        // Ambil brands juga supaya nama brand ikut ke-join manual
+        // (GET /api/products belum tentu include relasi brand-nya)
+        const [productData, brandData] = await Promise.all([getProducts(), getBrands()]);
+        if (!mounted) return;
+
+        const brandMap = new Map<number, Brand>(brandData.map((b) => [b.id, b]));
+
+        // "Produk Terbaru" = urutkan berdasarkan tahun_rilis (terbaru dulu),
+        // baru ambil 8 teratas. Kalau tidak diurutkan manual, urutannya ikut
+        // apa adanya dari backend (biasanya urutan id insert, belum tentu rilis terbaru).
+        const sorted = [...productData].sort((a, b) => {
+          const dateA = a.tahun_rilis ? new Date(a.tahun_rilis).getTime() : 0;
+          const dateB = b.tahun_rilis ? new Date(b.tahun_rilis).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        const mapped = sorted
+          .slice(0, 8)
+          .map((p) => mapApiProductToProductData(p, brandMap.get(p.brands_id)));
+
+        setProducts(mapped);
+
+        // Tahun rilis terbaru dari seluruh produk (bukan cuma 8 yang ditampilkan)
+        const years = productData
+          .map((p) => (p.tahun_rilis ? new Date(p.tahun_rilis).getFullYear() : null))
+          .filter((y): y is number => !!y && !isNaN(y));
+        setLatestYear(years.length > 0 ? Math.max(...years).toString() : null);
+
+        setErrorMsg(null);
+      } catch (err) {
+        if (!mounted) return;
+        setErrorMsg('Gagal memuat produk dari server. Pastikan backend berjalan di http://localhost:3000.');
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="w-full flex flex-col">
       
@@ -34,21 +74,20 @@ export const Beranda: React.FC = () => {
             </p>
             {/* Group Tombol Aksi */}
             <div className="flex flex-wrap gap-4 pt-2 w-full sm:w-auto">
-              <button className="px-5 py-2.5 bg-[#d62828] hover:bg-[#b71c1c] text-white text-xs font-bold uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all cursor-pointer">
+              <a href="/produk" className="px-5 py-2.5 bg-[#d62828] hover:bg-[#b71c1c] text-white text-xs font-bold uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all cursor-pointer">
                 Belanja Sekarang
-              </button>
-              <button className="px-5 py-2.5 bg-white hover:bg-stone-100 text-black text-xs font-bold uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all cursor-pointer">
+              </a>
+              <a href="/rekomendasi" className="px-5 py-2.5 bg-white hover:bg-stone-100 text-black text-xs font-bold uppercase border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.75 active:translate-y-0.75 active:shadow-none transition-all cursor-pointer">
                 Rekomendasi
-              </button>
+              </a>
             </div>
           </div>
 
           {/* Ilustrasi Mockup Kanan */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
-            {/* Gunakan gambar mockup gawai miring Anda di sini */}
             <div className="relative w-full max-w-sm lg:max-w-md aspect-square md:aspect-auto flex items-center justify-center">
               <img 
-                src="src/assets/brand/hero-phones.png" 
+                src="src/assets/hero.png" 
                 alt="Mockup Smartphone" 
                 className="w-full h-auto object-contain [image-rendering:pixelated] max-h-75 md:max-h-105"
               />
@@ -61,21 +100,48 @@ export const Beranda: React.FC = () => {
       {/* 2. SECTION PRODUK TERBARU */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 text-center">
         {/* Title Section */}
-        <h2 className="text-[#64748b] font-black text-2xl md:text-3xl uppercase tracking-wide mb-10 select-none">
-          Produk Terbaru
-        </h2>
+        <div className="mb-10">
+          <h2 className="text-[#64748b] font-black text-2xl md:text-3xl uppercase tracking-wide select-none">
+            Produk Terbaru
+          </h2>
+          {latestYear && (
+            <p className="text-xs md:text-sm text-stone-500 font-bold uppercase mt-2 select-none">
+              Update Rilis Tahun {latestYear}
+            </p>
+          )}
+        </div>
+
+        {isLoading && (
+          <p className="text-sm font-bold text-stone-500 uppercase">Memuat produk...</p>
+        )}
+
+        {!isLoading && errorMsg && (
+          <p className="text-sm font-bold text-[#e53935] uppercase">{errorMsg}</p>
+        )}
+
+        {!isLoading && !errorMsg && products.length === 0 && (
+          <p className="text-sm font-bold text-stone-500 uppercase">Belum ada produk tersedia.</p>
+        )}
 
         {/* Responsive Grid System (Mobile: 1 kolom, Tablet: 2 kolom, Desktop: 4 kolom) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 justify-center">
-          {dummyProducts.map((prod) => (
-            <ProductCard 
-              key={prod.id} 
-              product={prod} 
-              onDetailClick={(id) => console.log(`Akses Detail Produk ID: ${id}`)} 
-            />
-          ))}
-        </div>
+        {!isLoading && !errorMsg && products.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 justify-center">
+            {products.map((prod) => (
+              <ProductCard 
+                key={prod.id} 
+                product={prod} 
+                onDetailClick={() => setSelectedProduct(prod)} 
+              />
+            ))}
+          </div>
+        )}
       </section>
+
+      {/* OVERLAY INTERAKTIF DETAIL PRODUK */}
+      <ProductDetail
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
 
     </div>
   );

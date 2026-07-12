@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ProductCard from '../../components/CardProduk';
 import OptionBox, { type OptionItem } from '../../components/ui/OptionBox';
 import { ProductDetail } from '../../components/CardDetail';
-import type { ProductData } from '../../types/product';
+import type { ProductData, Brand } from '../../types/product';
+import { mapApiProductToProductData } from '../../types/product';
+import { getProducts } from '../../api/products';
+import { getBrands } from '../../api/brands';
 
 export type FilterType = 'termurah' | 'kamera' | 'ram' | 'baterai' | '';
 
-// Deklarasi data opsi untuk filter dropdown (Menyelesaikan error OPSI_FILTER_HP)
+// Deklarasi data opsi untuk filter dropdown
 const OPSI_FILTER_HP: OptionItem<FilterType>[] = [
   { value: 'termurah', label: 'Harga Termurah 💰' },
   { value: 'kamera', label: 'Kamera Terbagus 📸' },
@@ -14,106 +17,174 @@ const OPSI_FILTER_HP: OptionItem<FilterType>[] = [
   { value: 'baterai', label: 'Baterai Terawet 🔋' },
 ];
 
-// Data Dummy Utama (Struktur siap mapping API)
-const DATA_PRODUK_MASTER: ProductData[] = [
-  // Brand Xiaomi
-  { id: 'x1', nama: 'Xiaomi 14 Ultra', brand: 'Xiaomi', harga: 18999000, ram: '16 GB', penyimpanan: '512GB', kamera: '50 MP Lythia', baterai: '5000 mAh', chipset: 'Snapdragon 8 Gen 3', nanometer: '4 Nm', os: 'HyperOS', fastCharging: '90 Wat', display: 'AMOLED 6.73"', updateOs: '4 Tahun' },
-  { id: 'x2', nama: 'Redmi Note 13 Pro', brand: 'Xiaomi', harga: 4399000, ram: '8 GB', penyimpanan: '256GB', kamera: '200 MP Samsung', baterai: '5100 mAh', chipset: 'Helio G99 Ultra', nanometer: '6 Nm', os: 'Android 14', fastCharging: '67 Wat', display: 'AMOLED 6.67"', updateOs: '2 Tahun' },
-  
-  // Brand Vivo
-  { id: 'v1', nama: 'Vivo X100 Pro', brand: 'Vivo', harga: 15999000, ram: '16 GB', penyimpanan: '512GB', kamera: '50 MP Zeiss', baterai: '5400 mAh', chipset: 'Dimensity 9300', nanometer: '4 Nm', os: 'FuntouchOS 14', fastCharging: '100 Wat', display: 'AMOLED 6.78"', updateOs: '3 Tahun' },
-  { id: 'v2', nama: 'Vivo V30 Pro 5G', brand: 'Vivo', harga: 8999000, ram: '12 GB', penyimpanan: '512GB', kamera: '50 MP Triple', baterai: '5000 mAh', chipset: 'Dimensity 8200', nanometer: '4 Nm', os: 'FuntouchOS', fastCharging: '80 Wat', display: 'AMOLED', updateOs: '3 Tahun' },
-
-  // Brand Oppo
-  { id: 'o1', nama: 'Oppo Find X7 Ultra', brand: 'Oppo', harga: 19500000, ram: '16 GB', penyimpanan: '512GB', kamera: '50 MP Quad', baterai: '5000 mAh', chipset: 'Snapdragon 8 Gen 3', nanometer: '4 Nm', os: 'ColorOS 14', fastCharging: '100 Wat', display: 'OLED 6.82"', updateOs: '4 Tahun' },
-  { id: 'o2', nama: 'Oppo Reno 11 Pro', brand: 'Oppo', harga: 8499000, ram: '12 GB', penyimpanan: '512GB', kamera: '50 MP Main', baterai: '4600 mAh', chipset: 'Dimensity 8200', nanometer: '4 Nm', os: 'ColorOS', fastCharging: '80 Wat', display: 'OLED', updateOs: '2 Tahun' },
-].map(prod => ({ ...prod, imageUrl: 'src/assets/brand/reko.png' }));
-
 export const KatalogProduk: React.FC = () => {
+  const [produkMaster, setProdukMaster] = useState<ProductData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const [filter, setFilter] = useState<FilterType>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        // Ambil brands juga supaya nama brand ikut ke-join manual
+        // (GET /api/products belum tentu include relasi brand-nya) -> ini
+        // yang bikin sebelumnya semua produk kegabung jadi 1 grup "Lainnya"
+        const [productData, brandData] = await Promise.all([getProducts(), getBrands()]);
+        if (!mounted) return;
+        const brandMap = new Map<number, Brand>(brandData.map((b) => [b.id, b]));
+        setProdukMaster(
+          productData.map((p) => mapApiProductToProductData(p, brandMap.get(p.brands_id)))
+        );
+        setErrorMsg(null);
+      } catch (err) {
+        if (!mounted) return;
+        setErrorMsg('Gagal memuat produk dari server. Pastikan backend berjalan di http://localhost:3000.');
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Otomatis deteksi brand unik dari database/data master
   const listBrand = useMemo(() => {
-    const brands = DATA_PRODUK_MASTER.map(p => p.brand);
+    const brands = produkMaster.map(p => p.brand);
     return Array.from(new Set(brands));
-  }, []);
+  }, [produkMaster]);
 
-  // Fungsi Logika sortir data
-  const sortedProducts = useMemo(() => {
-    const dataCopy = [...DATA_PRODUK_MASTER];
+  // Logika penyaringan (Search) & pengurutan (Filter Dropdown)
+  const filteredAndSortedProducts = useMemo(() => {
+    // 1. Filter berdasarkan Search Input (Nama atau Brand)
+    let filtered = produkMaster.filter((item) => {
+      const q = searchQuery.toLowerCase().trim();
+      return item.nama.toLowerCase().includes(q) || item.brand.toLowerCase().includes(q);
+    });
+
+    // 2. Urutkan berdasarkan Opsi Filter
     if (filter === 'termurah') {
-      return dataCopy.sort((a, b) => a.harga - b.harga);
+      return filtered.sort((a, b) => a.harga - b.harga);
     }
     if (filter === 'kamera') {
-      return dataCopy.sort((a, b) => parseInt(b.kamera) - parseInt(a.kamera));
+      return filtered.sort((a, b) => parseInt(b.kamera) - parseInt(a.kamera));
     }
     if (filter === 'ram') {
-      return dataCopy.sort((a, b) => parseInt(b.ram) - parseInt(a.ram));
+      return filtered.sort((a, b) => parseInt(b.ram) - parseInt(a.ram));
     }
     if (filter === 'baterai') {
-      return dataCopy.sort((a, b) => parseInt(b.baterai) - parseInt(a.baterai));
+      return filtered.sort((a, b) => parseInt(b.baterai) - parseInt(a.baterai));
     }
-    return dataCopy;
-  }, [filter]);
+
+    return filtered;
+  }, [filter, searchQuery, produkMaster]);
 
   return (
     <div className="w-full bg-[#f4f6f9] font-mono min-h-screen py-6 md:py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* BAR ALAT PENGATUR FILTER */}
-        <div className="w-full bg-white border-4 border-black p-4 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        {/* BAR ALAT PENGATUR FILTER & SEARCH BAR */}
+        <div className="w-full bg-white border-4 border-black p-4 md:p-6 mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div>
-            <h1 className="text-xl font-black uppercase text-black">Katalog Smartphone</h1>
+            <h1 className="text-xl md:text-2xl font-black uppercase text-black">Katalog Smartphone</h1>
             <p className="text-xs text-stone-500 font-bold uppercase mt-0.5">Daftar Smartphone resmi per-brand</p>
           </div>
           
-          <OptionBox<FilterType>
-            label="Filter:"
-            placeholder="-- PILIH PILIHAN URUTAN --"
-            options={OPSI_FILTER_HP}
-            currentValue={filter}
-            onValueChange={(val) => setFilter(val)}
-          />
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* SEARCH INPUT BAR */}
+            <div className="relative flex-1 sm:w-64">
+              <input
+                type="text"
+                placeholder="Cari HP / Brand..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border-2 border-black px-3 py-2 text-xs font-bold text-black placeholder:text-stone-400 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-0.5 focus:translate-y-0.5 focus:shadow-none transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 font-black text-xs text-stone-500 hover:text-black"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* FILTER DROPDOWN */}
+            <OptionBox<FilterType>
+              label="Filter:"
+              placeholder="-- PILIH PILIHAN URUTAN --"
+              options={OPSI_FILTER_HP}
+              currentValue={filter}
+              onValueChange={(val) => setFilter(val)}
+            />
+          </div>
         </div>
+
+        {isLoading && (
+          <div className="w-full bg-white border-4 border-black p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <p className="text-sm font-black uppercase text-black">Memuat produk...</p>
+          </div>
+        )}
+
+        {!isLoading && errorMsg && (
+          <div className="w-full bg-white border-4 border-black p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <p className="text-sm font-black uppercase text-[#e53935]">{errorMsg}</p>
+          </div>
+        )}
 
         {/* CONTAINER LOOPING PER BRAND */}
-        <div className="space-y-12">
-          {listBrand.map((brandName) => {
-            const produkPerBrand = sortedProducts.filter(p => p.brand.toLowerCase() === brandName.toLowerCase());
-
-            if (produkPerBrand.length === 0) return null;
-
-            return (
-              <div key={brandName} className="w-full">
-                {/* Header Batang Nama Brand */}
-                <div className="border-b-4 border-black mb-6 pb-2 flex items-center">
-                  <h2 className="text-2xl font-black uppercase tracking-tight text-black bg-white border-2 border-black px-4 py-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                    ⚡ {brandName}
-                  </h2>
-                </div>
-
-                {/* HORIZONTAL SCROLL SLIDER COMPONENT */}
-                <div className="flex overflow-x-auto pb-4 gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar">
-                  {produkPerBrand.map((prod) => (
-                    <div 
-                      key={prod.id} 
-                      className="w-70 sm:w-[320px] shrink-0 snap-start"
-                    >
-                      <ProductCard
-                        product={prod}
-                        onDetailClick={(id) => {
-                          const target = DATA_PRODUK_MASTER.find(p => p.id === id);
-                          if (target) setSelectedProduct(target);
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
+        {!isLoading && !errorMsg && (
+          <div className="space-y-12">
+            {filteredAndSortedProducts.length === 0 ? (
+              /* Tampilan jika pencarian tidak ditemukan */
+              <div className="w-full bg-white border-4 border-black p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-lg font-black uppercase text-black">🔍 Produk Tidak Ditemukan</p>
+                <p className="text-xs font-bold text-stone-500 mt-1">
+                  Tidak ada smartphone dengan kata kunci "{searchQuery}". Coba kata kunci lain.
+                </p>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              listBrand.map((brandName) => {
+                const produkPerBrand = filteredAndSortedProducts.filter(
+                  p => p.brand.toLowerCase() === brandName.toLowerCase()
+                );
+
+                if (produkPerBrand.length === 0) return null;
+
+                return (
+                  <div key={brandName} className="w-full">
+                    {/* Header Batang Nama Brand */}
+                    <div className="border-b-4 border-black mb-6 pb-2 flex items-center">
+                      <h2 className="text-2xl font-black uppercase tracking-tight text-black bg-white border-2 border-black px-4 py-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                        ⚡ {brandName}
+                      </h2>
+                    </div>
+
+                    {/* HORIZONTAL SCROLL SLIDER COMPONENT */}
+                    <div className="flex overflow-x-auto pb-4 gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar">
+                      {produkPerBrand.map((prod) => (
+                        <div 
+                          key={prod.id} 
+                          className="w-70 sm:w-[320px] shrink-0 snap-start"
+                        >
+                          <ProductCard
+                            product={prod}
+                            onDetailClick={() => setSelectedProduct(prod)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
 
       </div>
 

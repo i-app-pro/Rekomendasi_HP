@@ -1,8 +1,17 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom'; //  Import Link untuk navigasi Single Page Application
+import { Link, useNavigate } from 'react-router-dom'; //  Import Link untuk navigasi Single Page Application
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+    navigate('/');
+  };
 
   return (
     <nav className="w-full bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50 select-none">
@@ -36,12 +45,25 @@ export const Navbar = () => {
           {/* Action Button & Hamburger */}
           <div className="flex items-center gap-4">
             {/* Merapikan susunan tombol Login agar bersih dan tidak ditumpuk tag anchor */}
-            <Link 
-              to="/login" 
-              className="hidden sm:inline-block px-5 py-2 text-sm font-bold text-white bg-[#d62828] hover:bg-[#b71c1c] rounded-xl transition-all shadow-sm"
-            >
-              Login / Register
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="hidden sm:flex items-center gap-3">
+                <span className="text-sm font-bold text-gray-700">👋 {user.nama}</span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-bold text-white bg-gray-800 hover:bg-black rounded-xl transition-all shadow-sm cursor-pointer"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link 
+                to="/login" 
+                className="hidden sm:inline-block px-5 py-2 text-sm font-bold text-white bg-[#d62828] hover:bg-[#b71c1c] rounded-xl transition-all shadow-sm"
+              >
+                Login / Register
+              </Link>
+            )}
             
             {/* Mobile Menu Button */}
             <button 
@@ -94,13 +116,23 @@ export const Navbar = () => {
           >
             About Us
           </Link>
-          <Link 
-            to="/login"
-            onClick={() => setIsOpen(false)}
-            className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-[#d62828] rounded-xl"
-          >
-            Login / Register
-          </Link>
+          {isAuthenticated && user ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-gray-800 rounded-xl cursor-pointer"
+            >
+              👋 {user.nama} · Logout
+            </button>
+          ) : (
+            <Link 
+              to="/login"
+              onClick={() => setIsOpen(false)}
+              className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-[#d62828] rounded-xl"
+            >
+              Login / Register
+            </Link>
+          )}
         </div>
       )}
     </nav>

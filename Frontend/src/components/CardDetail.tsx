@@ -40,11 +40,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
         <div className="block md:hidden h-1 bg-[#e53935] w-full"></div>
 
         {/* Sisi Kanan: List Spesifikasi Lengkap */}
-        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-center text-black font-semibold text-sm md:text-base gap-2">
+        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-center text-black font-semibold text-sm md:text-base gap-1.5 overflow-y-auto">
           <div className="border-b-4 border-black pb-1 mb-2">
             <h2 className="text-xl md:text-2xl font-black uppercase">{product.nama}</h2>
           </div>
-          
+
           <p><span className="text-gray-500">&gt; </span>Nama : {product.nama}</p>
           <p><span className="text-gray-500">&gt; </span>Brand : {product.brand}</p>
           <p><span className="text-gray-500">&gt; </span>Harga : Rp {product.harga.toLocaleString('id-ID')}</p>
@@ -52,6 +52,27 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
           <p><span className="text-gray-500">&gt; </span>Penyimpanan : {product.penyimpanan}</p>
           <p><span className="text-gray-500">&gt; </span>Kamera : {product.kamera}</p>
           <p><span className="text-gray-500">&gt; </span>Baterai : {product.baterai}</p>
+          {product.updateOs && (
+            <p><span className="text-gray-500">&gt; </span>Update OS : {product.updateOs}</p>
+          )}
+          {product.chipset && (
+            <p><span className="text-gray-500">&gt; </span>Chipset : {product.chipset}</p>
+          )}
+          {product.os && (
+            <p><span className="text-gray-500">&gt; </span>OS : {product.os}</p>
+          )}
+          {product.fastCharging && (
+            <p><span className="text-gray-500">&gt; </span>Fast Charging : {product.fastCharging}</p>
+          )}
+          {product.display && (
+            <p><span className="text-gray-500">&gt; </span>Display : {product.display}</p>
+          )}
+          {product.nanometer && (
+            <p><span className="text-gray-500">&gt; </span>Nanometer : {product.nanometer}</p>
+          )}
+          {product.tahunrilis && (
+            <p><span className="text-gray-500">&gt; </span>Tahun Rilis : {product.tahunrilis}</p>
+          )}
 
           {/* 4. TOMBOL TUTUP DI BAGIAN BAWAH SPESIFIKASI */}
           <div className="pt-4 mt-2">

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { InputText } from "../../components/ui/InputText";
 import { InputPassword } from "../../components/ui/InputPassword";
 import { Button } from "../../components/ui/Button";
+import { useAuthStore } from "../../store/useAuthStore";
 
 type RegisterFormData = {
   nama: string;
@@ -23,6 +24,7 @@ const registerSchema = z.object({
 
 export default function RegisterForm() {
   const navigate = useNavigate();
+  const { register: registerUser, isLoading, error } = useAuthStore();
 
   const {
     register,
@@ -30,11 +32,14 @@ export default function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
 
-  const onSubmit = (data: RegisterFormData) => {
-    console.log("Simulasi Register Data:", data);
-    alert("Registrasi Akun Berhasil (Simulasi Dummy)!");
-    // Setelah daftar diarahkan langsung ke halaman login
-    navigate("/login");
+  const onSubmit = async (data: RegisterFormData) => {
+    try {
+      // Backend langsung mengembalikan token & login akun yang baru dibuat
+      await registerUser(data);
+      navigate("/");
+    } catch {
+      // Pesan error sudah ditangani & disimpan di store (lihat `error` di bawah)
+    }
   };
 
   return (
@@ -72,6 +77,13 @@ export default function RegisterForm() {
         error={errors.password?.message}
       />
 
+      {/* Pesan error dari backend (mis. email sudah terdaftar) */}
+      {error && (
+        <p className="text-red-600 text-xs md:text-sm font-semibold mb-4 -mt-2 text-center">
+          {error}
+        </p>
+      )}
+
       {/* Teks Navigasi Kembali ke Login */}
       <p className="text-[11px] md:text-xs font-semibold text-gray-500 mt-1 mb-6 md:mb-8 select-none">
         Sudah memiliki akun?{" "}
@@ -87,8 +99,9 @@ export default function RegisterForm() {
       <div className="w-full flex justify-center">
         <Button 
           type="submit" 
-          label="REGISTRASI" 
+          label={isLoading ? "MEMPROSES..." : "REGISTRASI"}
           variant="primary" 
+          disabled={isLoading}
           className="w-full"
         />
       </div>

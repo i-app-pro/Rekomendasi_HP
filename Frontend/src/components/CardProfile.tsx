@@ -6,6 +6,7 @@ interface CardProfileProps {
   status: string;
   universitas: string;
   bahasaPemrograman: string[];
+  email: string;
   usernameGit: string;
   usernameIg: string;
 }
@@ -16,6 +17,7 @@ export const CardProfile: React.FC<CardProfileProps> = ({
   status,
   universitas,
   bahasaPemrograman,
+  email,
   usernameGit,
   usernameIg,
 }) => {
@@ -68,6 +70,15 @@ export const CardProfile: React.FC<CardProfileProps> = ({
 
         {/* Link Media Sosial (Tanpa Ikon Lucide) */}
         <div className="border-t-2 border-black pt-2 flex flex-col gap-1 text-xs">
+          <p className="text-gray-500 font-bold uppercase mb-1.5 tracking-wider">
+            [ CONTACT ]
+          </p>
+          <a
+            href={`mailto:${email}`}
+            className="text-black hover:text-blue-600 hover:underline w-fit flex items-center"
+          >
+            <span className="font-bold text-red-600 mr-1.5">EMAIL&gt;</span> {email}
+          </a>
           <a
             href={`https://github.com/${usernameGit}`}
             target="_blank"

@@ -59,6 +59,7 @@ export default function WpView({ sessionId }: WpViewProps) {
                 <th className="px-6 py-4 rounded-l-xl text-center">Rank</th>
                 <th className="px-6 py-4">Produk</th>
                 <th className="px-6 py-4">Brand</th>
+                <th className="px-6 py-4">Customer</th>
                 <th className="px-6 py-4">Harga</th>
                 <th className="px-6 py-4 text-center">Nilai S</th>
                 <th className="px-6 py-4 rounded-r-xl text-center">Skor WP (V)</th>
@@ -67,7 +68,7 @@ export default function WpView({ sessionId }: WpViewProps) {
             <tbody>
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-6 text-slate-500 bg-white rounded-xl">
+                  <td colSpan={7} className="text-center py-6 text-slate-500 bg-white rounded-xl">
                     Belum ada hasil. Pastikan sesi ini sudah punya bobot kriteria terisi.
                   </td>
                 </tr>
@@ -79,6 +80,7 @@ export default function WpView({ sessionId }: WpViewProps) {
                   </td>
                   <td className="px-6 py-4 border-y border-slate-200">{row.nama_hp}</td>
                   <td className="px-6 py-4 border-y border-slate-200">{row.brand}</td>
+                  <td className="px-6 py-4 border-y border-slate-200">{row.nama_customer ?? '-'}</td>
                   <td className="px-6 py-4 border-y border-slate-200">Rp {row.harga.toLocaleString('id-ID')}</td>
                   <td className="px-6 py-4 border-y border-slate-200 text-center">{row.nilai_s?.toFixed(3) ?? '-'}</td>
                   <td className="px-6 py-4 rounded-r-xl border-y border-r border-slate-200 text-center font-black">{row.skor.toFixed(3)}</td>

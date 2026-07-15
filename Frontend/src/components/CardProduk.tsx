@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ProductData } from '../types/product';
+import { formatRupiah } from '../lib/formatRupiah';
 
 interface ProductCardProps {
   product: ProductData;
@@ -7,16 +8,11 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onDetailClick }) => {
-  // Format harga ke rupiah
-  const formatRupiah = (angka: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
-  };
-
   return (
     <div className="font-mono w-full max-w-85 bg-[#1e2530] border-4 border-black p-5 flex flex-col items-center gap-4 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] select-none mx-auto">
       
       {/* Container Gambar Produk */}
-      <div className="w-full bg-[#d9d9d9] border-4 border-black p-4 flex justify-center items-center h-56 rounded-md">
+      <div className="w-full bg-white border-4 border-black p-3 flex justify-center items-center h-56 overflow-hidden">
         <img 
           src={product.imageUrl} 
           alt={product.nama} 

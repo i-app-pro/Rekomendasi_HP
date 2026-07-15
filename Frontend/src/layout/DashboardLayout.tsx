@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const DashboardLayout: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // Inisialisasi useNavigate
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const menuItems = [
@@ -26,9 +28,12 @@ export const DashboardLayout: React.FC = () => {
 
   // --- FUNGSI LOGOUT ---
   const handleLogout = () => {
-
-    // Arahkan pengguna kembali ke halaman Login (sesuaikan dengan path login kamu)
-    navigate('/'); 
+    // Hapus token & data user dari useAuthStore (otomatis ikut terhapus dari
+    // localStorage juga, karena store ini pakai persist middleware).
+    // Sebelumnya baris ini tidak ada, jadi token lama tetap tersimpan
+    // walau sudah pindah halaman -> user dianggap masih login.
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -61,6 +66,16 @@ export const DashboardLayout: React.FC = () => {
           <h1 className="text-xl font-black tracking-widest">
             REKO<span className="text-[#d62828]">PHONE</span>
           </h1>
+
+          {/* Info user yang sedang login, diambil dari useAuthStore */}
+          {user && (
+            <div className="mt-3 text-center">
+              <p className="text-sm font-bold text-slate-700 truncate max-w-40">{user.nama}</p>
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                {user.role}
+              </span>
+            </div>
+          )}
         </div>
 
         <nav className="w-full flex flex-col gap-3 grow overflow-y-auto no-scrollbar">
@@ -83,7 +98,6 @@ export const DashboardLayout: React.FC = () => {
           })}
         </nav>
 
-        {/* --- TOMBOL LOGOUT DIPERBARUI --- */}
         <button 
           onClick={handleLogout} 
           className="w-full py-3 mt-4 bg-[#ef4444] hover:bg-red-600 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all cursor-pointer"

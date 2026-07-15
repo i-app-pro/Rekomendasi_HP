@@ -1,17 +1,17 @@
-import React from 'react';
+import type { FieldValues, Path, UseFormRegister } from 'react-hook-form';
 
-interface InputTextProps {
+interface InputTextProps<T extends FieldValues> {
   label: string;
-  nama: string;
+  nama: Path<T>;
   error?: string;
-  register: any;
-  placeholder?: string; 
+  register: UseFormRegister<T>;
+  placeholder?: string;
 }
 
-export const InputText: React.FC<InputTextProps> = ({ label, nama, error, register, placeholder }) => {
+export function InputText<T extends FieldValues>({ label, nama, error, register, placeholder }: InputTextProps<T>) {
   return (
     <div className="flex flex-col gap-2 mb-4 w-full">
-      {/* Label besar adaptif: text-xl di mobile, text-2xl di desktop */}
+
       <label className="text-xl md:text-2xl font-semibold text-black tracking-wide pl-1 select-none">
         {label}
       </label>
@@ -28,6 +28,6 @@ export const InputText: React.FC<InputTextProps> = ({ label, nama, error, regist
       {error && <p className="text-red-600 text-xs md:text-sm font-semibold mt-0.5 pl-1">{error}</p>}
     </div>
   );
-};
+}
 
 export default InputText;

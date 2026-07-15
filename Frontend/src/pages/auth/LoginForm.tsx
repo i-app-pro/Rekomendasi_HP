@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 
-// Mengimpor komponen kustom
 import { InputText } from "../../components/ui/InputText";
 import { InputPassword } from "../../components/ui/InputPassword";
 import { Button } from "../../components/ui/Button";
@@ -33,7 +32,6 @@ export default function LoginForm() {
     try {
       const user = await login({ email: data.email, password: data.password });
       
-      // FIX: Admin ke /dashboard, customer ke /
       if (user?.role === "admin") {
         navigate("/dashboard");
       } else {
@@ -46,12 +44,10 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col w-full">
-      {/* Judul Form */}
       <h2 className="text-3xl md:text-4xl font-black text-center text-black tracking-wide uppercase mb-6 md:mb-8">
         LOGIN
       </h2>
 
-      {/* Field Input Email */}
       <InputText
         label="Email"
         nama="email"
@@ -60,7 +56,6 @@ export default function LoginForm() {
         error={errors.email?.message}
       />
 
-      {/* Field Input Password */}
       <InputPassword
         label="Password"
         nama="password"
@@ -76,7 +71,6 @@ export default function LoginForm() {
         </p>
       )}
 
-      {/* Teks Navigasi ke Register */}
       <p className="text-[11px] md:text-xs font-semibold text-gray-500 mt-1 mb-6 md:mb-8 select-none">
         Belum punya akun?{" "}
         <span 
@@ -87,7 +81,6 @@ export default function LoginForm() {
         </span>
       </p>
 
-      {/* Tombol Aksi Submit */}
       <div className="w-full flex justify-center">
         <Button 
           type="submit" 

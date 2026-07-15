@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User, LoginPayload, RegisterPayload } from "../types/auth";
 import { loginRequest, registerRequest } from "../api/auth";
+import { getErrorMessage } from "../lib/errorMessage";
 
 interface AuthState {
   token: string | null;
@@ -33,9 +34,8 @@ export const useAuthStore = create<AuthState>()(
           const { token, user } = await loginRequest(payload);
           set({ token, user, isAuthenticated: true, isLoading: false });
           return user;
-        } catch (err: any) {
-          const message =
-            err?.response?.data?.message || "Email atau password salah";
+        } catch (err) {
+          const message = getErrorMessage(err, "Email atau password salah");
           set({ isLoading: false, error: message });
           throw new Error(message);
         }
@@ -47,9 +47,8 @@ export const useAuthStore = create<AuthState>()(
           const { token, user } = await registerRequest(payload);
           set({ token, user, isAuthenticated: true, isLoading: false });
           return user;
-        } catch (err: any) {
-          const message =
-            err?.response?.data?.message || "Registrasi gagal, coba lagi";
+        } catch (err) {
+          const message = getErrorMessage(err, "Registrasi gagal, coba lagi");
           set({ isLoading: false, error: message });
           throw new Error(message);
         }

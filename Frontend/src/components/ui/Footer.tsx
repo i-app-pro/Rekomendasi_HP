@@ -1,9 +1,11 @@
+import dinoLogo from '../../assets/brand/reko.png';
+
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="w-full bg-gray-900 text-gray-300 border-t border-gray-800">
-      {/* Konten Utama Footer */}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           
@@ -11,7 +13,7 @@ export const Footer = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <img 
-                src="src/assets/brand/reko.png" 
+                src={dinoLogo} 
                 alt="Reko" 
                 className="h-7 w-auto object-contain brightness-110" 
               />
@@ -28,9 +30,9 @@ export const Footer = () => {
               Layanan
             </h4>
             <ul className="space-y-2.5 text-sm text-gray-400">
-              <li><a href="#" className="hover:text-[#e53935] transition-colors block py-0.5">Beli Handphone</a></li>
-              <li><a href="#" className="hover:text-[#e53935] transition-colors block py-0.5">Cari Rekomendasi</a></li>
-              <li><a href="#" className="hover:text-[#e53935] transition-colors block py-0.5">Tantang REKOPHONE</a></li>
+              <li><a href="/produk" className="hover:text-[#e53935] transition-colors block py-0.5">Beli Handphone</a></li>
+              <li><a href="/rekomendasi" className="hover:text-[#e53935] transition-colors block py-0.5">Cari Rekomendasi</a></li>
+              <li><a href="/tentang" className="hover:text-[#e53935] transition-colors block py-0.5">Tentang REKOPHONE</a></li>
             </ul>
           </div>
 
@@ -44,7 +46,7 @@ export const Footer = () => {
                 <span className="font-semibold text-gray-300">Email:</span> support@rekophone.com
               </p>
               <p className="flex items-center gap-2">
-                <span className="font-semibold text-gray-300">WhatsApp:</span> +62 812-3456-7890
+                <span className="font-semibold text-gray-300">WhatsApp:</span> +62 8123-4567-890
               </p>
             </div>
           </div>

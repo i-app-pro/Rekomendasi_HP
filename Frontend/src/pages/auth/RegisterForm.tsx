@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 
-// Mengimpor komponen kustom
 import { InputText } from "../../components/ui/InputText";
 import { InputPassword } from "../../components/ui/InputPassword";
 import { Button } from "../../components/ui/Button";
@@ -34,7 +33,6 @@ export default function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      // Backend langsung mengembalikan token & login akun yang baru dibuat
       await registerUser(data);
       navigate("/login");
     } catch {
@@ -44,13 +42,11 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col w-full">
-      
-      {/* Judul Form Sesuai Gambar */}
+
       <h2 className="text-3xl md:text-4xl font-black text-center text-black tracking-wide uppercase mb-6 md:mb-8">
         REGISTER
       </h2>
 
-      {/* Field Input Nama */}
       <InputText
         label="Nama"
         nama="nama"
@@ -59,7 +55,6 @@ export default function RegisterForm() {
         error={errors.nama?.message}
       />
 
-      {/* Field Input Email */}
       <InputText
         label="Email"
         nama="email"
@@ -68,7 +63,6 @@ export default function RegisterForm() {
         error={errors.email?.message}
       />
 
-      {/* Field Input Password */}
       <InputPassword
         label="Password"
         nama="password"
@@ -84,7 +78,6 @@ export default function RegisterForm() {
         </p>
       )}
 
-      {/* Teks Navigasi Kembali ke Login */}
       <p className="text-[11px] md:text-xs font-semibold text-gray-500 mt-1 mb-6 md:mb-8 select-none">
         Sudah memiliki akun?{" "}
         <span 
@@ -95,7 +88,6 @@ export default function RegisterForm() {
         </span>
       </p>
 
-      {/* Tombol Registrasi Merah Tebal */}
       <div className="w-full flex justify-center">
         <Button 
           type="submit" 

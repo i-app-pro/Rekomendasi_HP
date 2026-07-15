@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductCard from '../../components/CardProduk';
 import { ProductDetail } from '../../components/CardDetail';
-import type { ProductData, Brand } from '../../types/product';
+import type { Brand, ProductData } from '../../types/product';
 import { mapApiProductToProductData } from '../../types/product';
 import { getProducts } from '../../api/products';
 import { getBrands } from '../../api/brands';
 
-export const Beranda: React.FC = () => {
+const JUMLAH_PRODUK_TERBARU = 8;
+
+export default function Beranda() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [latestYear, setLatestYear] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,55 +17,53 @@ export const Beranda: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
         setIsLoading(true);
         // Ambil brands juga supaya nama brand ikut ke-join manual
-        // (GET /api/products belum tentu include relasi brand-nya)
         const [productData, brandData] = await Promise.all([getProducts(), getBrands()]);
         if (!mounted) return;
 
         const brandMap = new Map<number, Brand>(brandData.map((b) => [b.id, b]));
 
-        // "Produk Terbaru" = urutkan berdasarkan tahun_rilis (terbaru dulu),
-        // baru ambil 8 teratas. Kalau tidak diurutkan manual, urutannya ikut
-        // apa adanya dari backend (biasanya urutan id insert, belum tentu rilis terbaru).
-        const sorted = [...productData].sort((a, b) => {
-          const dateA = a.tahun_rilis ? new Date(a.tahun_rilis).getTime() : 0;
-          const dateB = b.tahun_rilis ? new Date(b.tahun_rilis).getTime() : 0;
-          return dateB - dateA;
-        });
-
-        const mapped = sorted
-          .slice(0, 8)
-          .map((p) => mapApiProductToProductData(p, brandMap.get(p.brands_id)));
-
-        setProducts(mapped);
-
-        // Tahun rilis terbaru dari seluruh produk (bukan cuma 8 yang ditampilkan)
-        const years = productData
+        // Tahun rilis terbaru dari SELURUH produk (bukan cuma yang ditampilkan setelah di-slice)
+        const releaseYears = productData
           .map((p) => (p.tahun_rilis ? new Date(p.tahun_rilis).getFullYear() : null))
-          .filter((y): y is number => !!y && !isNaN(y));
-        setLatestYear(years.length > 0 ? Math.max(...years).toString() : null);
+          .filter((year): year is number => !!year && !isNaN(year));
+        setLatestYear(releaseYears.length > 0 ? Math.max(...releaseYears).toString() : null);
 
+        // Urutkan dari yang paling baru rilis, ambil 8 teratas untuk section "Produk Terbaru"
+        const terbaru = [...productData]
+          .sort((a, b) => {
+            const dateA = a.tahun_rilis ? new Date(a.tahun_rilis).getTime() : 0;
+            const dateB = b.tahun_rilis ? new Date(b.tahun_rilis).getTime() : 0;
+            return dateB - dateA;
+          })
+          .slice(0, JUMLAH_PRODUK_TERBARU);
+
+        setProducts(terbaru.map((p) => mapApiProductToProductData(p, brandMap.get(p.brands_id))));
         setErrorMsg(null);
-      } catch (err) {
+      } catch {
         if (!mounted) return;
         setErrorMsg('Gagal memuat produk dari server. Pastikan backend berjalan di http://localhost:3000.');
       } finally {
         if (mounted) setIsLoading(false);
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
     <div className="w-full flex flex-col">
-      
-      {/* 1. HERO SECTION (Sesuai Banner Atas) */}
+
+      {/* HERO SECTION */}
       <section className="w-full bg-[#1e2530] border-b-4 border-black relative overflow-hidden select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28 flex flex-col md:flex-row items-center justify-between gap-8">
-          
+
           {/* Teks Deskripsi Hero */}
           <div className="w-full md:w-1/2 flex flex-col items-start gap-4 md:gap-6 z-10 text-left">
             <h1 className="text-white font-black text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wide leading-tight">
@@ -86,9 +86,9 @@ export const Beranda: React.FC = () => {
           {/* Ilustrasi Mockup Kanan */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end z-10">
             <div className="relative w-full max-w-sm lg:max-w-md aspect-square md:aspect-auto flex items-center justify-center">
-              <img 
-                src="src/assets/hero.png" 
-                alt="Mockup Smartphone" 
+              <img
+                src="src/assets/brand/hp.png"
+                alt="Mockup Smartphone"
                 className="w-full h-auto object-contain [image-rendering:pixelated] max-h-75 md:max-h-105"
               />
             </div>
@@ -97,7 +97,7 @@ export const Beranda: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. SECTION PRODUK TERBARU */}
+      {/* SECTION PRODUK TERBARU */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 text-center">
         {/* Title Section */}
         <div className="mb-10">
@@ -127,10 +127,10 @@ export const Beranda: React.FC = () => {
         {!isLoading && !errorMsg && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 justify-center">
             {products.map((prod) => (
-              <ProductCard 
-                key={prod.id} 
-                product={prod} 
-                onDetailClick={() => setSelectedProduct(prod)} 
+              <ProductCard
+                key={prod.id}
+                product={prod}
+                onDetailClick={() => setSelectedProduct(prod)}
               />
             ))}
           </div>
@@ -146,5 +146,3 @@ export const Beranda: React.FC = () => {
     </div>
   );
 };
-
-export default Beranda;

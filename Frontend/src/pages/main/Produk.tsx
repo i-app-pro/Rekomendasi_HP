@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ProductCard from '../../components/CardProduk';
 import OptionBox, { type OptionItem } from '../../components/ui/OptionBox';
 import { ProductDetail } from '../../components/CardDetail';
@@ -17,7 +17,7 @@ const OPSI_FILTER_HP: OptionItem<FilterType>[] = [
   { value: 'baterai', label: 'Baterai Terawet 🔋' },
 ];
 
-export const KatalogProduk: React.FC = () => {
+export default function KatalogProduk() {
   const [produkMaster, setProdukMaster] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -32,8 +32,6 @@ export const KatalogProduk: React.FC = () => {
       try {
         setIsLoading(true);
         // Ambil brands juga supaya nama brand ikut ke-join manual
-        // (GET /api/products belum tentu include relasi brand-nya) -> ini
-        // yang bikin sebelumnya semua produk kegabung jadi 1 grup "Lainnya"
         const [productData, brandData] = await Promise.all([getProducts(), getBrands()]);
         if (!mounted) return;
         const brandMap = new Map<number, Brand>(brandData.map((b) => [b.id, b]));
@@ -41,7 +39,7 @@ export const KatalogProduk: React.FC = () => {
           productData.map((p) => mapApiProductToProductData(p, brandMap.get(p.brands_id)))
         );
         setErrorMsg(null);
-      } catch (err) {
+      } catch {
         if (!mounted) return;
         setErrorMsg('Gagal memuat produk dari server. Pastikan backend berjalan di http://localhost:3000.');
       } finally {
@@ -59,13 +57,12 @@ export const KatalogProduk: React.FC = () => {
 
   // Logika penyaringan (Search) & pengurutan (Filter Dropdown)
   const filteredAndSortedProducts = useMemo(() => {
-    // 1. Filter berdasarkan Search Input (Nama atau Brand)
+    // Filter berdasarkan Search Input (Nama)
     let filtered = produkMaster.filter((item) => {
       const q = searchQuery.toLowerCase().trim();
       return item.nama.toLowerCase().includes(q) || item.brand.toLowerCase().includes(q);
     });
 
-    // 2. Urutkan berdasarkan Opsi Filter
     if (filter === 'termurah') {
       return filtered.sort((a, b) => a.harga - b.harga);
     }
@@ -98,7 +95,7 @@ export const KatalogProduk: React.FC = () => {
             <div className="relative flex-1 sm:w-64">
               <input
                 type="text"
-                placeholder="Cari HP / Brand..."
+                placeholder="Cari HP"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-white border-2 border-black px-3 py-2 text-xs font-bold text-black placeholder:text-stone-400 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-0.5 focus:translate-y-0.5 focus:shadow-none transition-all"
@@ -141,7 +138,6 @@ export const KatalogProduk: React.FC = () => {
         {!isLoading && !errorMsg && (
           <div className="space-y-12">
             {filteredAndSortedProducts.length === 0 ? (
-              /* Tampilan jika pencarian tidak ditemukan */
               <div className="w-full bg-white border-4 border-black p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-lg font-black uppercase text-black">🔍 Produk Tidak Ditemukan</p>
                 <p className="text-xs font-bold text-stone-500 mt-1">
@@ -196,5 +192,3 @@ export const KatalogProduk: React.FC = () => {
     </div>
   );
 };
-
-export default KatalogProduk;

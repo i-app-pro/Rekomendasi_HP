@@ -11,7 +11,7 @@ export const DashboardLayout: React.FC = () => {
     { name: 'User', path: '/dashboard/user' },
     { name: 'Brand', path: '/dashboard/brand' },
     { name: 'Product', path: '/dashboard/product' },
-    { name: 'Pembobotan', path: '/dashboard/pembobotan' },
+    { name: 'Perhitungan SPK', path: '/dashboard/pembobotan' },
     { name: 'Criteria', path: '/dashboard/criteria' },
     { name: 'Founder', path: '/dashboard/founder' },
     { name: 'Criteria Value', path: '/dashboard/criteria-value' },

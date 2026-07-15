@@ -1,6 +1,8 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import multer from 'multer';
 import { db } from './lib/db';
 
 import authRoutes from './routes/authRoutes';
@@ -22,6 +24,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Sajikan file yang di-upload (foto product & founder) secara statis lewat
+// http://<host>/uploads/<nama-file>. Folder "uploads" ada di root project backend.
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'Rekophone API is running', status: 'ok' });
 });
@@ -41,6 +47,16 @@ app.use((req: Request, res: Response) => {
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  // Error dari Multer (ukuran file kelewatan, dll) atau dari fileFilter kita
+  // (format file tidak didukung) -> balikin 400 dengan pesan yang jelas,
+  // bukan 500 generik.
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ message: `Upload gagal: ${err.message}` });
+  }
+  if (err?.message?.includes('Format file tidak didukung')) {
+    return res.status(400).json({ message: err.message });
+  }
+
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
 });

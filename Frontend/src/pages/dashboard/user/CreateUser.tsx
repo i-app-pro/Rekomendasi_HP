@@ -1,26 +1,21 @@
 import React, { useState } from 'react';
-
-export interface UserData {
-  id?: string;
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
+import type { CreateUserPayload } from '../../../api/users';
 
 interface CreateUserProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: UserData) => void;
+  onSave: (data: CreateUserPayload) => Promise<void> | void;
 }
 
 export default function CreateUser({ isOpen, onClose, onSave }: CreateUserProps) {
-  const [formData, setFormData] = useState<UserData>({
-    name: '',
+  const [formData, setFormData] = useState<CreateUserPayload>({
+    nama: '',
     email: '',
     password: '',
-    role: 'User'
+    role: 'customers',
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -28,12 +23,19 @@ export default function CreateUser({ isOpen, onClose, onSave }: CreateUserProps)
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    // Reset form setelah sukses input
-    setFormData({ name: '', email: '', password: '', role: 'User' });
-    onClose();
+    try {
+      setIsSaving(true);
+      setError(null);
+      await onSave(formData);
+      setFormData({ nama: '', email: '', password: '', role: 'customers' });
+      onClose();
+    } catch (err) {
+      setError('Gagal menyimpan user. Cek kembali data yang diisi.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -47,9 +49,10 @@ export default function CreateUser({ isOpen, onClose, onSave }: CreateUserProps)
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          {error && <p className="text-sm font-bold text-red-600">{error}</p>}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Nama Lengkap</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} required
+            <input type="text" name="nama" value={formData.nama} onChange={handleChange} required
               className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan nama" />
           </div>
           <div>
@@ -65,13 +68,15 @@ export default function CreateUser({ isOpen, onClose, onSave }: CreateUserProps)
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Role</label>
             <select name="role" value={formData.role} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white">
-              <option value="User">User</option>
-              <option value="Admin">Admin</option>
+              <option value="customers">Customers</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-            <button type="submit" className="px-5 py-2 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm">Simpan</button>
+            <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Batal</button>
+            <button type="submit" disabled={isSaving} className="px-5 py-2 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm cursor-pointer disabled:opacity-50">
+              {isSaving ? 'Menyimpan...' : 'Simpan'}
+            </button>
           </div>
         </form>
       </div>

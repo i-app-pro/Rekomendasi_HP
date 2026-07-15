@@ -36,7 +36,7 @@ export default function RegisterForm() {
     try {
       // Backend langsung mengembalikan token & login akun yang baru dibuat
       await registerUser(data);
-      navigate("/");
+      navigate("/login");
     } catch {
       // Pesan error sudah ditangani & disimpan di store (lihat `error` di bawah)
     }

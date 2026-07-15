@@ -1,125 +1,62 @@
-import React from 'react';
+import { useState } from 'react';
+import SessionSelector from './SessionSelector';
+import KriteriaBobotView from './KriteriaBobotView';
+import SawView from './SawView';
+import WpView from './WpView';
+import TopsisView from './TopsisView';
 
-// --- DUMMY DATA SEMENTARA ---
-// Data disesuaikan dengan konsep Sistem Pendukung Keputusan (SPK)
-const dummyPembobotan = [
-  { id: 'W01', nilaiBobot: '0.35', session: 'Sesi Rekomendasi Q3', criteria: 'Harga' },
-  { id: 'W02', nilaiBobot: '0.25', session: 'Sesi Rekomendasi Q3', criteria: 'Chipset / Performa' },
-  { id: 'W03', nilaiBobot: '0.15', session: 'Sesi Rekomendasi Q3', criteria: 'Kamera' },
-  { id: 'W04', nilaiBobot: '0.15', session: 'Sesi Rekomendasi Q3', criteria: 'RAM & Penyimpanan' },
-  { id: 'W05', nilaiBobot: '0.10', session: 'Sesi Rekomendasi Q3', criteria: 'Baterai' },
+type TabKey = 'bobot' | 'saw' | 'wp' | 'topsis';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'bobot', label: 'Alternatif & Kriteria Bobot' },
+  { key: 'saw', label: 'Metode SAW' },
+  { key: 'wp', label: 'Metode WP' },
+  { key: 'topsis', label: 'Metode TOPSIS' },
 ];
 
+// Halaman "Perhitungan SPK" — berisi 4 view terpisah (masing-masing file/komponen sendiri):
+// 1. KriteriaBobotView -> bobot kriteria per sesi (GET/PUT/DELETE /api/sessions/:id/pembobotan)
+// 2. SawView            -> GET /api/recommendation/saw?session_id=
+// 3. WpView             -> GET /api/recommendation/wp?session_id=
+// 4. TopsisView         -> GET /api/recommendation/topsis?session_id=
+// Session selector di atas dipakai bersama supaya ke-4 view menghitung untuk sesi yang sama,
+// tapi hanya SATU view yang dirender pada satu waktu (benar-benar terpisah, bukan digabung).
 export default function PembobotanPage() {
-  // Kolom disesuaikan dengan gambar desain Pembobotan.png
-  const columns = ['ID', 'Nilai Bobot', 'Recommendation Session', 'Criteria'];
-
-  const displayData = [...dummyPembobotan];
-  while (displayData.length < 5) {
-    displayData.push({ id: '', nilaiBobot: '', session: '', criteria: '' });
-  }
+  const [activeTab, setActiveTab] = useState<TabKey>('bobot');
+  const [sessionId, setSessionId] = useState<number | null>(null);
 
   return (
     <div className="w-full flex flex-col gap-4">
-      
-      {/* ----------------------------------------------------------------- */}
-      {/* 1. TAMPILAN DESKTOP (TABEL) - Akan tersembunyi di layar kecil */}
-      {/* ----------------------------------------------------------------- */}
-      <div className="hidden md:block w-full overflow-x-auto">
-        <table className="w-full text-sm text-left border-separate" style={{ borderSpacing: '0 12px' }}>
-          <thead className="text-sm text-white font-bold bg-[#1e2530]">
-            <tr>
-              {columns.map((col, index) => (
-                <th 
-                  key={index} 
-                  className={`px-6 py-4 whitespace-nowrap 
-                    ${index === 0 ? 'rounded-l-xl' : ''} 
-                    ${index === columns.length - 1 ? 'rounded-r-xl' : ''}
-                  `}
-                >
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {displayData.map((row, rowIndex) => (
-              <tr 
-                key={rowIndex} 
-                className={`bg-white text-slate-800 font-semibold shadow-sm border border-slate-100 transition-colors
-                  ${row.id ? 'hover:bg-slate-50' : ''} 
-                `}
-              >
-                {/* Menggunakan &nbsp; (\u00A0) agar tinggi baris kosong tetap sama dengan baris berisi data */}
-                <td className="px-6 py-4 rounded-l-xl border-y border-l border-slate-200 whitespace-nowrap">{row.id || '\u00A0'}</td>
-                <td className="px-6 py-4 border-y border-slate-200">
-                  {/* Highlight khusus untuk nilai bobot */}
-                  {row.nilaiBobot && (
-                    <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md border border-indigo-100">
-                      {row.nilaiBobot}
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 border-y border-slate-200">{row.session}</td>
-                <td className="px-6 py-4 rounded-r-xl border-y border-r border-slate-200 font-bold text-slate-700">{row.criteria}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <h3 className="font-bold text-slate-700 hidden md:block">Perhitungan SPK</h3>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* 2. TAMPILAN MOBILE (CARD) - Hanya muncul di layar kecil (HP) */}
-      {/* ----------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
-        {displayData.filter(row => row.id).map((row, index) => (
-          <div key={index} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
-            
-            {/* Header Card: ID & Nilai Bobot */}
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <span className="bg-[#1e2530] text-white text-xs font-black px-3 py-1.5 rounded-md">
-                ID: {row.id}
-              </span>
-              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-md border border-indigo-200">
-                Bobot: {row.nilaiBobot}
-              </span>
-            </div>
-            
-            {/* Body Card: Criteria & Session */}
-            <div className="flex flex-col gap-1 pt-1">
-              <span className="text-xl font-black text-slate-800">{row.criteria}</span>
-              <span className="text-sm font-medium text-slate-500 flex items-center gap-2 mt-1">
-                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                {row.session}
-              </span>
-            </div>
+      {/* Pemilih sesi — dipakai bersama oleh ke-4 view di bawah */}
+      <SessionSelector sessionId={sessionId} onChange={setSessionId} />
 
-          </div>
+      {/* Tab navigasi ke-4 view */}
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-lg font-bold text-xs uppercase transition-all cursor-pointer ${
+              activeTab === tab.key
+                ? 'bg-[#1e2530] text-white shadow-md'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {tab.label}
+          </button>
         ))}
-
-        {/* State Jika Data Kosong */}
-        {dummyPembobotan.length === 0 && (
-          <div className="text-center py-6 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
-            Belum ada data Pembobotan
-          </div>
-        )}
       </div>
 
-      {/* FOOTER PAGINATION */}
-      <div className="flex justify-between items-center mt-4 text-sm font-bold text-slate-600 px-2">
-        <span>Menampilkan 1 sampai {dummyPembobotan.length} dari {dummyPembobotan.length}</span>
-        <div className="flex gap-2">
-          <button className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-          </button>
-          <button className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 active:scale-95 transition-all cursor-pointer">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-          </button>
-        </div>
+      {/* Hanya render 1 view aktif pada satu waktu */}
+      <div className="w-full">
+        {activeTab === 'bobot' && <KriteriaBobotView sessionId={sessionId} />}
+        {activeTab === 'saw' && <SawView sessionId={sessionId} />}
+        {activeTab === 'wp' && <WpView sessionId={sessionId} />}
+        {activeTab === 'topsis' && <TopsisView sessionId={sessionId} />}
       </div>
-
     </div>
   );
 }

@@ -1,33 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { type CriteriaData } from './CreateCriteria';
+import type { Criteria } from '../../../types/spk';
+import type { CriteriaPayload } from '../../../api/criteria';
 
 interface EditCriteriaProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (data: CriteriaData) => void;
-  criteriaData: CriteriaData | null;
+  onUpdate: (id: number, data: CriteriaPayload) => Promise<void> | void;
+  criteriaData: Criteria | null;
 }
 
 export default function EditCriteria({ isOpen, onClose, onUpdate, criteriaData }: EditCriteriaProps) {
-  const [formData, setFormData] = useState<CriteriaData>({ nama: '', atribut: 'Benefit' });
+  const [formData, setFormData] = useState<CriteriaPayload>({ nama: '', atribut: 'benefit', default_bobot: 5 });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sinkronkan data saat modal edit terbuka
   useEffect(() => {
     if (criteriaData) {
-      setFormData(criteriaData);
+      setFormData({ nama: criteriaData.nama, atribut: criteriaData.atribut, default_bobot: criteriaData.default_bobot });
     }
   }, [criteriaData, isOpen]);
 
   if (!isOpen || !criteriaData) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: name === 'default_bobot' ? Number(value) : value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(formData); 
-    onClose();
+    try {
+      setIsSaving(true);
+      setError(null);
+      await onUpdate(criteriaData.id, formData);
+      onClose();
+    } catch (err) {
+      setError('Gagal update kriteria. Coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -41,34 +52,49 @@ export default function EditCriteria({ isOpen, onClose, onUpdate, criteriaData }
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          {error && <p className="text-sm font-bold text-red-600">{error}</p>}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Nama Kriteria</label>
-            <input 
-              type="text" 
-              name="nama" 
-              value={formData.nama} 
-              onChange={handleChange} 
+            <input
+              type="text"
+              name="nama"
+              value={formData.nama}
+              onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" 
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Atribut</label>
-            <select 
-              name="atribut" 
-              value={formData.atribut} 
-              onChange={handleChange} 
+            <select
+              name="atribut"
+              value={formData.atribut}
+              onChange={handleChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Benefit">Benefit (Keuntungan)</option>
-              <option value="Cost">Cost (Biaya)</option>
+              <option value="benefit">Benefit (Keuntungan)</option>
+              <option value="cost">Cost (Biaya)</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1">Bobot Default</label>
+            <input
+              type="number"
+              name="default_bobot"
+              value={formData.default_bobot}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
             <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Batal</button>
-            <button type="submit" className="px-5 py-2 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm cursor-pointer">Update</button>
+            <button type="submit" disabled={isSaving} className="px-5 py-2 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm cursor-pointer disabled:opacity-50">
+              {isSaving ? 'Menyimpan...' : 'Update'}
+            </button>
           </div>
         </form>
       </div>

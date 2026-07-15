@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; //  Import Link untuk navigasi Single Page Application
 import { useAuthStore } from '../../store/useAuthStore';
+import dinoLogo from '../../assets/brand/reko.png';
+import textLogo from '../../assets/brand/rekophone.png';
+
+const NAV_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/produk', label: 'Products' },
+  { to: '/rekomendasi', label: 'Rekomendasi' },
+  { to: '/tentang', label: 'About Us' },
+] as const;
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -19,32 +28,31 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           
           {/* Brand Logo & Text */}
-          {/* Menggunakan Link agar jika logo diklik, otomatis kembali ke Beranda / Home */}
           <Link to="/" className="flex items-center gap-2 cursor-pointer shrink-0">
             <img 
-              src="src/assets/brand/reko.png" 
+              src={dinoLogo} 
               alt="Reko Dino Logo" 
               className="h-8 md:h-10 w-auto object-contain"
             />
             <img 
-              src="src/assets/brand/rekophone.png" 
+              src={textLogo} 
               alt="Rekophone" 
               className="h-4 md:h-5 w-auto object-contain"
             />
           </Link>
 
           {/* Navigation Links - Desktop Only */}
-          {/* Mengubah semua tag <a> menjadi <Link to="..."> */}
           <div className="hidden md:flex items-center gap-8 text-base font-semibold text-gray-700">
-            <Link to="/" className="hover:text-[#e53935] transition-colors">Home</Link>
-            <Link to="/produk" className="hover:text-[#e53935] transition-colors">Products</Link>
-            <Link to="/rekomendasi" className="hover:text-[#e53935] transition-colors">Rekomendasi</Link>
-            <Link to="/tentang" className="hover:text-[#e53935] transition-colors">About Us</Link>
+            {NAV_LINKS.map((link) => (
+              <Link key={link.to} to={link.to} className="hover:text-[#e53935] transition-colors">
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           {/* Action Button & Hamburger */}
           <div className="flex items-center gap-4">
-            {/* Merapikan susunan tombol Login agar bersih dan tidak ditumpuk tag anchor */}
+
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-3">
                 <span className="text-sm font-bold text-gray-700">👋 {user.nama}</span>
@@ -87,35 +95,16 @@ export const Navbar = () => {
       {/* Mobile Menu Panel */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 px-4 pt-2 pb-4 space-y-2 animate-fadeIn">
-          {/* Mengubah menu mobile menjadi <Link> juga */}
-          <Link 
-            to="/" 
-            onClick={() => setIsOpen(false)} 
-            className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]"
-          >
-            Home
-          </Link>
-          <Link 
-            to="/produk" 
-            onClick={() => setIsOpen(false)} 
-            className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]"
-          >
-            Products
-          </Link>
-          <Link 
-            to="/rekomendasi" 
-            onClick={() => setIsOpen(false)} 
-            className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]"
-          >
-            Rekomendasi
-          </Link>
-          <Link 
-            to="/tentang" 
-            onClick={() => setIsOpen(false)} 
-            className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]"
-          >
-            About Us
-          </Link>
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              onClick={() => setIsOpen(false)}
+              className="block px-3 py-2 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#e53935]"
+            >
+              {link.label}
+            </Link>
+          ))}
           {isAuthenticated && user ? (
             <button
               type="button"

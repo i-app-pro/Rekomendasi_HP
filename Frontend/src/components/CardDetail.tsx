@@ -1,9 +1,10 @@
 import React from 'react';
 import type { ProductData } from '../types/product';
+import { formatRupiah } from '../lib/formatRupiah';
 
 interface ProductDetailProps {
   product: ProductData | null;
-  onClose: () => void; // Menambahkan prop onClose agar bisa menutup modal
+  onClose: () => void; 
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
@@ -11,13 +12,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
   if (!product) return null;
 
   return (
-    /* 1. BACKDROP OVERLAY GELAP */
+    /* BACKDROP OVERLAY GELAP */
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm font-mono transition-opacity">
       
-      {/* 2. KOTAK MODAL UTAMA */}
+      {/* KOTAK MODAL UTAMA */}
       <div className="relative w-full max-w-4xl bg-white border-4 border-[#e53935] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col md:flex-row overflow-y-auto max-h-[90vh]">
         
-        {/* 3. TOMBOL CLOSE (X) POJOK ATAS */}
         <button 
           type="button"
           onClick={onClose}
@@ -27,11 +27,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
         </button>
 
         {/* Sisi Kiri: Gambar (Mobile: Atas, Desktop: Kiri) */}
-        <div className="w-full md:w-1/2 bg-[#d9d9d9] p-6 flex justify-center items-center min-h-65 md:min-h-100">
+        <div className="w-full md:w-1/2 bg-white p-6 flex justify-center items-center min-h-65 md:min-h-100">
           <img 
             src={product.imageUrl} 
             alt={product.nama} 
-            className="max-h-80 object-contain [image-rendering:pixelated]"
+            className="max-h-80 max-w-full object-contain [image-rendering:pixelated]"
           />
         </div>
 
@@ -47,7 +47,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
 
           <p><span className="text-gray-500">&gt; </span>Nama : {product.nama}</p>
           <p><span className="text-gray-500">&gt; </span>Brand : {product.brand}</p>
-          <p><span className="text-gray-500">&gt; </span>Harga : Rp {product.harga.toLocaleString('id-ID')}</p>
+          <p><span className="text-gray-500">&gt; </span>Harga : {formatRupiah(product.harga)}</p>
           <p><span className="text-gray-500">&gt; </span>RAM : {product.ram}</p>
           <p><span className="text-gray-500">&gt; </span>Penyimpanan : {product.penyimpanan}</p>
           <p><span className="text-gray-500">&gt; </span>Kamera : {product.kamera}</p>
@@ -74,7 +74,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }
             <p><span className="text-gray-500">&gt; </span>Tahun Rilis : {product.tahunrilis}</p>
           )}
 
-          {/* 4. TOMBOL TUTUP DI BAGIAN BAWAH SPESIFIKASI */}
+          {/* TOMBOL TUTUP DI BAGIAN BAWAH SPESIFIKASI */}
           <div className="pt-4 mt-2">
             <button
               type="button"

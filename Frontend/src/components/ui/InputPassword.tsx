@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import type { FieldValues, Path, UseFormRegister } from 'react-hook-form';
 
-interface InputPasswordProps {
+interface InputPasswordProps<T extends FieldValues> {
   label: string;
-  nama: string;
+  nama: Path<T>;
   error?: string;
-  register: any;
+  register: UseFormRegister<T>;
   placeholder?: string;
 }
 
-export const InputPassword: React.FC<InputPasswordProps> = ({ label, nama, error, register, placeholder }) => {
+export function InputPassword<T extends FieldValues>({ label, nama, error, register, placeholder }: InputPasswordProps<T>) {
   const [show, setShow] = useState<boolean>(false);
 
   return (
@@ -52,6 +53,6 @@ export const InputPassword: React.FC<InputPasswordProps> = ({ label, nama, error
       {error && <p className="text-red-600 text-xs md:text-sm font-semibold mt-0.5 pl-1">{error}</p>}
     </div>
   );
-};
+}
 
 export default InputPassword;

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CardProfile } from '../../components/CardProfile';
 import { getFounders } from '../../api/founders';
 import type { Founder } from '../../types/founder';
+import dinoLogo from '../../assets/brand/reko.png';
+import trioPhoto from '../../assets/brand/trio.png';
 
 // Posisi tombol di ilustrasi (trio.png) -> id founder di database.
 // Sesuai permintaan: KIRI = id 3, TENGAH = id 1, KANAN = id 2.
@@ -11,9 +13,9 @@ const POSISI_KE_FOUNDER_ID: Record<'kiri' | 'tengah' | 'kanan', number> = {
   kanan: 2,
 };
 
-const PLACEHOLDER_FOTO = 'src/assets/brand/reko.png';
+const PLACEHOLDER_FOTO = dinoLogo;
 
-export const HalamanAboutUs: React.FC = () => {
+export default function HalamanAboutUs() {
   const [founders, setFounders] = useState<Founder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -47,19 +49,14 @@ export const HalamanAboutUs: React.FC = () => {
   return (
     <div className="w-full bg-[#f4f6f9] font-mono min-h-screen text-black flex flex-col">
       
-      {/* =========================================================
-          1. HERO HEADER BANNER (Sesuai bagian atas image_6f22ac.jpg)
-         ========================================================= */}
+      {/* HERO HEADER BANNER */}
       <div className="w-full bg-[#1e2530] border-b-4 border-black py-8 px-6 md:px-16 flex flex-row items-center justify-between shadow-[0_4px_0_0_rgba(0,0,0,1)]">
         <div className="flex items-center justify-center w-24 md:w-32">
-          {/* Ilustrasi Dinosaurus Merah */}
-          {/* <span className="text-5xl md:text-7xl animate-bounce"> */}
-            <img 
-            src="src/assets/brand/reko.png"
-            alt="Ilustrasi Dinosaurus Merah"
+          <img 
+            src={dinoLogo}
+            alt="Maskot"
             className="w-full h-auto object-contain [image-rendering:pixelated]"
-            />
-          {/* </span> */}
+          />
         </div>
         <div className="text-right max-w-xl">
           <h1 className="text-white text-2xl md:text-4xl font-black uppercase tracking-wide">
@@ -67,16 +64,14 @@ export const HalamanAboutUs: React.FC = () => {
             <span className="text-[#e53935]">REKOPHONE</span>
           </h1>
           <p className="text-gray-400 text-[10px] md:text-xs font-bold uppercase mt-2 leading-relaxed">
-            Website Rekomendasi Handphone yang Akan Memudahkan Anda dalam Menentukan Rekomendasi Handphone Terbaik
+            Website Rekomendasi Handphone yang Akan Memudahkan Kamu dalam Menentukan Rekomendasi Handphone Terbaik
           </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-12 flex flex-col items-center grow">
         
-        {/* =========================================================
-            2. DESKRIPSI UTAMA TENTANG APLIKASI
-           ========================================================= */}
+        {/* DESKRIPSI UTAMA TENTANG APLIKASI */}
         <div className="text-center mb-16 max-w-2xl">
           <h2 className="text-xl md:text-2xl font-black uppercase text-gray-500 mb-6 tracking-widest">
             Tentang
@@ -98,9 +93,7 @@ export const HalamanAboutUs: React.FC = () => {
           </p>
         </div>
 
-        {/* =========================================================
-            AREA TEAM KAMI & ILLUSTRATION CONTAINER
-           ========================================================= */}
+        {/* AREA TEAM KAMI & ILLUSTRATION CONTAINER */}
         <div className="w-full text-center flex flex-col items-center">
           <h2 className="text-xl md:text-2xl font-black uppercase text-gray-500 mb-8 tracking-widest">
             Team Kami
@@ -116,7 +109,7 @@ export const HalamanAboutUs: React.FC = () => {
           {/* Wrapper Gambar Ilustrasi Bertumpuk */}
           <div className="relative w-full max-w-2xl bg-[#d9d9d9] border-4 border-black p-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-md">
             <img 
-              src="src/assets/brand/trio.png" 
+              src={trioPhoto} 
               alt="Trio Rekophone Team" 
               className="w-full h-auto object-contain [image-rendering:pixelated]"
             />
@@ -166,19 +159,11 @@ export const HalamanAboutUs: React.FC = () => {
 
       </div>
 
-      {/* =========================================================
-          4. FOOTER IDENTITAS
-         ========================================================= */}
-
-
-      {/* =========================================================
-          5. POP-UP MODAL POP-UP UNTUK DETAIL PROFILE KARTU
-         ========================================================= */}
+      {/* POP-UP MODAL UNTUK DETAIL PROFILE KARTU */}
       {selectedFounder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity">
           <div className="relative w-full max-w-xl">
             
-            {/* Tombol Silang Penutup Modal */}
             <button 
               type="button"
               onClick={() => setSelectedFounder(null)}
@@ -187,7 +172,6 @@ export const HalamanAboutUs: React.FC = () => {
               X
             </button>
 
-            {/* Data asli dari GET /api/founders, bukan dummy lagi */}
             <CardProfile 
               foto={selectedFounder.foto || PLACEHOLDER_FOTO}
               nama={selectedFounder.nama}
@@ -206,5 +190,3 @@ export const HalamanAboutUs: React.FC = () => {
     </div>
   );
 };
-
-export default HalamanAboutUs;

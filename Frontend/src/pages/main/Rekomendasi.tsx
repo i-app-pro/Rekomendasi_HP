@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SliderBobot from '../../components/ui/SliderBobot';
 import OptionBox from '../../components/ui/OptionBox';
 import ProductCard from '../../components/CardProduk';
@@ -16,7 +16,7 @@ interface RankedProduct {
   product: ProductData;
 }
 
-export const HalamanRekomendasi: React.FC = () => {
+export default function HalamanRekomendasi() {
   // Daftar kriteria dari backend (GET /api/criteria) + bobot yang digeser user
   const [criteriaList, setCriteriaList] = useState<Criteria[]>([]);
   const [bobot, setBobot] = useState<Record<number, number>>({});
@@ -68,8 +68,7 @@ export const HalamanRekomendasi: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Kelompokkan CriteriaValue per criteria_id, diurutkan dari nilai terkecil,
-  // supaya dropdown menampilkan "< 8GB" sebelum ">= 8GB", dst.
+  // Kelompokkan CriteriaValue per criteria_id, diurutkan dari nilai terkecil
   const valuesByCriteria = useMemo(() => {
     const map = new Map<number, CriteriaValue[]>();
     criteriaValues.forEach((cv) => {
@@ -104,7 +103,6 @@ export const HalamanRekomendasi: React.FC = () => {
       );
 
       // Preferensi bersifat opsional: kriteria yang tidak dipilih user tidak dikirim,
-      // sehingga tidak memfilter produk apapun untuk kriteria itu (lihat HAVING di view).
       const preferenceIds = Object.values(preferensi)
         .filter((v) => v !== '')
         .map((v) => Number(v));
@@ -342,5 +340,3 @@ export const HalamanRekomendasi: React.FC = () => {
     </div>
   );
 };
-
-export default HalamanRekomendasi;

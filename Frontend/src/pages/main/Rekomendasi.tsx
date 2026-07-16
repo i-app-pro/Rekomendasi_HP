@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import SliderBobot from '../../components/ui/SliderBobot';
 import OptionBox from '../../components/ui/OptionBox';
 import ProductCard from '../../components/CardProduk';
 import { ProductDetail } from '../../components/CardDetail';
@@ -79,10 +78,6 @@ export default function HalamanRekomendasi() {
     map.forEach((arr) => arr.sort((a, b) => a.nilai - b.nilai));
     return map;
   }, [criteriaValues]);
-
-  const handleSliderChange = (id: string, value: number) => {
-    setBobot(prev => ({ ...prev, [Number(id)]: value }));
-  };
 
   const handlePreferensiChange = (criteriaId: number, criteriaValueId: string) => {
     setPreferensi(prev => ({ ...prev, [criteriaId]: criteriaValueId }));
@@ -188,41 +183,7 @@ export default function HalamanRekomendasi() {
           </div>
         )}
 
-        {/* SEKSI: SLIDER BOBOT KRITERIA (DINAMIS DARI BACKEND) */}
-        <div className="bg-white border-4 border-black p-6 md:p-8 mb-12 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative">
-
-          <button
-            type="button"
-            onClick={() => setShowGuide(true)}
-            className="absolute top-4 right-4 bg-black text-white p-2 border-2 border-black font-black text-xs hover:bg-[#e53935] cursor-pointer shadow-[2px_2px_0px_rgba(0,0,0,0.2)] transition-all"
-          >
-            📖 PANDUAN KRITERIA
-          </button>
-
-          {isLoadingCriteria && (
-            <p className="text-xs font-bold text-stone-500 uppercase pt-8">Memuat kriteria...</p>
-          )}
-
-          {!isLoadingCriteria && criteriaError && (
-            <p className="text-xs font-bold text-[#e53935] uppercase pt-8">{criteriaError}</p>
-          )}
-
-          {!isLoadingCriteria && !criteriaError && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 pt-8 pr-2">
-              {criteriaList.map((c) => (
-                <SliderBobot
-                  key={c.id}
-                  id={String(c.id)}
-                  label={`${c.nama} ${c.atribut === 'cost' ? '(Cost 🔴)' : '(Benefit 🟢)'}`}
-                  value={bobot[c.id] ?? c.default_bobot}
-                  onChange={handleSliderChange}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Tombol Jalankan Perhitungan SPK */}
-          <div className="w-full flex justify-end mt-8">
+        <div className="w-full flex justify-end mt-8">
             <button
               type="button"
               onClick={jalankanRekomendasi}
@@ -231,8 +192,8 @@ export default function HalamanRekomendasi() {
             >
               {isCalculating ? 'Menghitung...' : 'Cari Rekomendasi 🚀'}
             </button>
-          </div>
         </div>
+
 
         {/* SEKSI: JUDUL & GRUP TOMBOL METODE SPK */}
         <div className="w-full flex flex-col items-center mb-8 gap-4">

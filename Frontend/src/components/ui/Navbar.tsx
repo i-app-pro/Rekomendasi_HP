@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; //  Import Link untuk navigasi Single Page Application
 import { useAuthStore } from '../../store/useAuthStore';
+import { RiwayatModal } from '../Riwayat';
 import dinoLogo from '../../assets/brand/reko.png';
 import textLogo from '../../assets/brand/rekophone.png';
 
+// Daftar menu navigasi utama, dipakai bersama oleh menu desktop & menu mobile
+// supaya tidak perlu menulis link yang sama dua kali.
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/produk', label: 'Products' },
@@ -13,6 +16,7 @@ const NAV_LINKS = [
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [showRiwayat, setShowRiwayat] = useState<boolean>(false);
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
 
@@ -28,6 +32,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           
           {/* Brand Logo & Text */}
+          {/* Menggunakan Link agar jika logo diklik, otomatis kembali ke Beranda / Home */}
           <Link to="/" className="flex items-center gap-2 cursor-pointer shrink-0">
             <img 
               src={dinoLogo} 
@@ -52,10 +57,17 @@ export const Navbar = () => {
 
           {/* Action Button & Hamburger */}
           <div className="flex items-center gap-4">
-
+            {/* Merapikan susunan tombol Login agar bersih dan tidak ditumpuk tag anchor */}
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-3">
-                <span className="text-sm font-bold text-gray-700">👋 {user.nama}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowRiwayat(true)}
+                  className="text-sm font-bold text-gray-700 hover:text-[#e53935] hover:underline cursor-pointer transition-colors"
+                  title="Lihat riwayat rekomendasi"
+                >
+                  👋 {user.nama}
+                </button>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -106,13 +118,22 @@ export const Navbar = () => {
             </Link>
           ))}
           {isAuthenticated && user ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-gray-800 rounded-xl cursor-pointer"
-            >
-              👋 {user.nama} · Logout
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => { setShowRiwayat(true); setIsOpen(false); }}
+                className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-gray-700 bg-gray-100 rounded-xl cursor-pointer"
+              >
+                👋 {user.nama} · Riwayat Rekomendasi
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="block w-full sm:hidden mt-2 px-4 py-2.5 text-center text-sm font-bold text-white bg-gray-800 rounded-xl cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <Link 
               to="/login"
@@ -124,6 +145,8 @@ export const Navbar = () => {
           )}
         </div>
       )}
+
+      {showRiwayat && <RiwayatModal onClose={() => setShowRiwayat(false)} />}
     </nav>
   );
 };

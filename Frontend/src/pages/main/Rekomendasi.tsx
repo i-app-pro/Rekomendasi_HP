@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import SliderBobot from '../../components/ui/SliderBobot';
 import OptionBox from '../../components/ui/OptionBox';
 import ProductCard from '../../components/CardProduk';
 import { ProductDetail } from '../../components/CardDetail';
@@ -80,10 +79,7 @@ export default function HalamanRekomendasi() {
     return map;
   }, [criteriaValues]);
 
-  const handleSliderChange = (id: string, value: number) => {
-    setBobot(prev => ({ ...prev, [Number(id)]: value }));
-  };
-
+  
   const handlePreferensiChange = (criteriaId: number, criteriaValueId: string) => {
     setPreferensi(prev => ({ ...prev, [criteriaId]: criteriaValueId }));
   };

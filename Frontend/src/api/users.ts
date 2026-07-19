@@ -20,8 +20,10 @@ export interface UpdateUserPayload {
 }
 
 // GET /api/users - admin only
-export async function getUsers(): Promise<User[]> {
-  const res = await API.get("/users");
+export async function getUsers(params?: { page?: number; limit?: number }): Promise<User[]> {
+  const res = await API.get("/users", {
+    params: { page: params?.page ?? 1, limit: params?.limit ?? 1000 },
+  });
   return unwrap<User[]>(res.data);
 }
 

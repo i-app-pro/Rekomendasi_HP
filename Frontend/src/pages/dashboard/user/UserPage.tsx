@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CreateUser from './CreateUser';
 import EditUser from './EditUser';
 import type { User } from '../../../types/auth';
 import { getUsers, createUser, updateUser, deleteUser, type CreateUserPayload, type UpdateUserPayload } from '../../../api/users';
 import { getErrorMessage } from '../../../lib/errorMessage';
+import SearchBar from '../../../components/ui/SearchBar';
+import ExportExcelButton from '../../../components/ui/ExcelButton';
+import type { ExcelRow } from '../../../lib/exportExcel';
 
 export default function UserPage() {
   const columns = ['ID', 'Nama', 'Email', 'Role', 'Aksi'];
@@ -11,6 +14,7 @@ export default function UserPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -31,6 +35,31 @@ export default function UserPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Search dilakukan client-side (nama, email, role) 
+  const filteredUsers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return users;
+    return users.filter(
+      (u) =>
+        u.nama.toLowerCase().includes(keyword) ||
+        u.email.toLowerCase().includes(keyword) ||
+        u.role.toLowerCase().includes(keyword)
+    );
+  }, [users, search]);
+
+  // Baris untuk export Excel mengikuti data yang SEDANG TAMPIL (hasil filter search),
+  // jadi kalau admin cari "admin" dulu baru export, yang ke-export cuma yang cocok.
+  const exportRows: ExcelRow[] = useMemo(
+    () =>
+      filteredUsers.map((u) => ({
+        ID: u.id,
+        Nama: u.nama,
+        Email: u.email,
+        Role: u.role,
+      })),
+    [filteredUsers]
+  );
 
   const handleDelete = async (id: number) => {
     const isConfirm = window.confirm('Apakah kamu yakin ingin menghapus user ini?');
@@ -61,15 +90,19 @@ export default function UserPage() {
   return (
     <div className="w-full flex flex-col gap-4">
 
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-2">
         <h3 className="font-bold text-slate-700 hidden md:block">Manajemen Data User</h3>
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="px-4 py-2 bg-[#d62828] hover:bg-red-700 text-white font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-2 text-sm w-full md:w-auto justify-center cursor-pointer"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          Tambah User
-        </button>
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <SearchBar value={search} onChange={setSearch} placeholder="Cari nama, email, atau role..." />
+          <ExportExcelButton data={exportRows} fileName="data-user" sheetName="User" />
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="px-4 py-2 bg-[#d62828] hover:bg-red-700 text-white font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-2 text-sm w-full md:w-auto justify-center cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+            Tambah User
+          </button>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm font-medium text-slate-500">Memuat data...</p>}
@@ -90,10 +123,14 @@ export default function UserPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data user.</td></tr>
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-6 text-slate-500 bg-white rounded-xl">
+                      {search ? 'Tidak ada user yang cocok dengan pencarian.' : 'Belum ada data user.'}
+                    </td>
+                  </tr>
                 )}
-                {users.map((row) => (
+                {filteredUsers.map((row) => (
                   <tr key={row.id} className="bg-white text-slate-800 font-semibold shadow-sm hover:bg-slate-50 border border-slate-100">
                     <td className="px-6 py-4 rounded-l-xl border-y border-l border-slate-200">{row.id}</td>
                     <td className="px-6 py-4 border-y border-slate-200">{row.nama}</td>
@@ -118,10 +155,12 @@ export default function UserPage() {
 
           {/* TAMPILAN MOBILE */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
-            {users.length === 0 && (
-              <div className="text-center py-6 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data user.</div>
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-6 text-slate-500 bg-white rounded-xl border border-slate-200">
+                {search ? 'Tidak ada user yang cocok dengan pencarian.' : 'Belum ada data user.'}
+              </div>
             )}
-            {users.map((row) => (
+            {filteredUsers.map((row) => (
               <div key={row.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
@@ -151,7 +190,9 @@ export default function UserPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm font-bold text-slate-600 px-2">
-            <span>Menampilkan {users.length} data</span>
+            <span>
+              Menampilkan {filteredUsers.length} {search ? `dari ${users.length} ` : ''}data
+            </span>
           </div>
         </>
       )}

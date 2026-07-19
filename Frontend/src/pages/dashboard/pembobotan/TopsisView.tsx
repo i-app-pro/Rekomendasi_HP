@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { RecommendationItem } from '../../../types/spk';
 import { getRecommendation } from '../../../api/recommendation';
+import ExportExcelButton from '../../../components/ui/ExcelButton';
+import type { ExcelRow } from '../../../lib/exportExcel';
 
 interface TopsisViewProps {
   sessionId: number | null;
 }
 
 // Label singkat per kriteria, dipakai buat header kolom A+ / A- (c1..c6).
-// Urutan mengikuti view_perhitungan_topsis: c1=Harga, c2=RAM, c3=Penyimpanan,
-// c4=Baterai, c5=Update OS, c6=Kamera.
 const KOLOM_KRITERIA: { key: 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6'; label: string }[] = [
   { key: 'c1', label: 'Harga' },
   { key: 'c2', label: 'RAM' },
@@ -53,6 +53,34 @@ export default function TopsisView({ sessionId }: TopsisViewProps) {
     return () => { mounted = false; };
   }, [sessionId]);
 
+  // Export Excel: objek nested a_plus/a_minus di-flatten jadi kolom terpisah
+  // per kriteria ("A+ Harga", "A+ RAM", dst) karena Excel tidak bisa menyimpan
+  // object bersarang dalam 1 sel -- harus dipecah dulu sebelum dikirim ke
+  // exportToExcel().
+  const exportRows: ExcelRow[] = useMemo(
+    () =>
+      data.map((row) => {
+        const base: ExcelRow = {
+          Rank: row.ranking,
+          Produk: row.nama_hp,
+          Brand: row.brand,
+          Customer: row.nama_customer ?? '-',
+          'Harga (Rp)': row.harga,
+        };
+        KOLOM_KRITERIA.forEach((k) => {
+          base[`A+ ${k.label}`] = formatAngka(row.a_plus?.[k.key]);
+        });
+        KOLOM_KRITERIA.forEach((k) => {
+          base[`A- ${k.label}`] = formatAngka(row.a_minus?.[k.key]);
+        });
+        base['D+'] = row.d_plus?.toFixed(4) ?? '-';
+        base['D-'] = row.d_minus?.toFixed(4) ?? '-';
+        base['Skor TOPSIS'] = Number(row.skor.toFixed(4));
+        return base;
+      }),
+    [data]
+  );
+
   if (sessionId === null) {
     return (
       <div className="text-center py-10 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
@@ -65,7 +93,10 @@ export default function TopsisView({ sessionId }: TopsisViewProps) {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <h3 className="font-bold text-slate-700">Hasil Metode TOPSIS — Sesi #{sessionId}</h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <h3 className="font-bold text-slate-700">Hasil Metode TOPSIS — Sesi #{sessionId}</h3>
+        <ExportExcelButton data={exportRows} fileName={`hasil-topsis-sesi-${sessionId}`} sheetName="TOPSIS" />
+      </div>
 
       {isLoading && <p className="text-sm font-medium text-slate-500">Menghitung...</p>}
       {error && <p className="text-sm font-bold text-red-600">{error}</p>}

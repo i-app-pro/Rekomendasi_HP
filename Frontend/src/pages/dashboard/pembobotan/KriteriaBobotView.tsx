@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Pembobotan, MatrixAlternatifRow } from '../../../types/spk';
 import { getPembobotanBySession, updatePembobotan, deletePembobotan } from '../../../api/sessions';
 import { getMatrixAlternatif } from '../../../api/recommendation';
+import ExportExcelButton from '../../../components/ui/ExcelButton';
+import SearchBar from '../../../components/ui/SearchBar';
+import type { ExcelRow } from '../../../lib/exportExcel';
 
 interface KriteriaBobotViewProps {
   sessionId: number | null;
 }
 
-// Kolom kriteria yang ditampilkan di tabel matriks (c1..c6), lengkap dengan labelnya.
-// Urutan & arti kolom ini ikut definisi view_alternatif_kriteria_bobot di backend:
-// c1 = Harga (kategori 1-4), c2 = RAM, c3 = Penyimpanan, c4 = Baterai, c5 = Update OS, c6 = Kamera.
+// Kolom kriteria yang ditampilkan di tabel matriks (c1..c6).
 const KOLOM_KRITERIA: { key: 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6'; label: string }[] = [
   { key: 'c1', label: 'Harga' },
   { key: 'c2', label: 'RAM' },
@@ -31,6 +32,9 @@ export default function KriteriaBobotView({ sessionId }: KriteriaBobotViewProps)
   const [matrixData, setMatrixData] = useState<MatrixAlternatifRow[]>([]);
   const [isMatrixLoading, setIsMatrixLoading] = useState(false);
   const [matrixError, setMatrixError] = useState<string | null>(null);
+  // Search khusus tabel matriks: sesi SPK bisa punya banyak produk sekaligus,
+  // jadi berguna untuk cari cepat 1 produk/brand tertentu di tabel yang lebar ini.
+  const [matrixSearch, setMatrixSearch] = useState('');
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -116,6 +120,55 @@ export default function KriteriaBobotView({ sessionId }: KriteriaBobotViewProps)
     }
   };
 
+  // Export tabel "Bobot Kriteria"
+  const exportBobotRows: ExcelRow[] = useMemo(
+    () =>
+      data.map((row) => ({
+        ID: row.id,
+        Kriteria: row.criteria?.nama ?? row.criteria_id,
+        Atribut: row.criteria?.atribut ?? '-',
+        'Nilai Bobot': row.nilai_bobot,
+      })),
+    [data]
+  );
+
+  // Filter matriks by nama produk/brand (search client-side)
+  const filteredMatrixData = useMemo(() => {
+    const keyword = matrixSearch.trim().toLowerCase();
+    if (!keyword) return matrixData;
+    return matrixData.filter(
+      (row) =>
+        row.nama_produk.toLowerCase().includes(keyword) ||
+        row.nama_brand.toLowerCase().includes(keyword)
+    );
+  }, [matrixData, matrixSearch]);
+
+  // Export tabel "Matriks Alternatif" -- ini data dasar/matriks kategorisasi tiap
+  // kriteria PER PRODUK (c1..c6) beserta bobot & preferensi yang dipakai, SEBELUM
+  // dihitung jadi skor SAW/WP/TOPSIS. Backend belum punya tabel/endpoint terpisah
+  // khusus "normalisasi", jadi export ini yang paling mendekati kebutuhan tersebut
+  // karena isinya adalah matriks keputusan mentah yang dipakai oleh ketiga metode.
+  const exportMatrixRows: ExcelRow[] = useMemo(
+    () =>
+      filteredMatrixData.map((row) => {
+        const base: ExcelRow = {
+          Produk: row.nama_produk,
+          Brand: row.nama_brand,
+        };
+        KOLOM_KRITERIA.forEach((k, index) => {
+          base[`${k.label} (C${index + 1})`] = row[k.key] ?? '-';
+        });
+        KOLOM_KRITERIA.forEach((k) => {
+          base[`Bobot ${k.label}`] = row[`bobot_${k.key}` as const] ?? '-';
+        });
+        KOLOM_KRITERIA.forEach((k) => {
+          base[`Pref ${k.label}`] = row[`pref_${k.key}` as const] ?? '-';
+        });
+        return base;
+      }),
+    [filteredMatrixData]
+  );
+
   if (sessionId === null) {
     return (
       <div className="text-center py-10 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
@@ -126,7 +179,10 @@ export default function KriteriaBobotView({ sessionId }: KriteriaBobotViewProps)
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <h3 className="font-bold text-slate-700">Bobot Kriteria — Sesi #{sessionId}</h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <h3 className="font-bold text-slate-700">Bobot Kriteria — Sesi #{sessionId}</h3>
+        <ExportExcelButton data={exportBobotRows} fileName={`bobot-kriteria-sesi-${sessionId}`} sheetName="Bobot Kriteria" />
+      </div>
 
       {isLoading && <p className="text-sm font-medium text-slate-500">Memuat data...</p>}
       {error && <p className="text-sm font-bold text-red-600">{error}</p>}
@@ -210,14 +266,22 @@ export default function KriteriaBobotView({ sessionId }: KriteriaBobotViewProps)
       )}
 
       {/* ================================================================
-          MATRIKS ALTERNATIF & KRITERIA BOBOT (view_alternatif_kriteria_bobot
+          MATRIKS ALTERNATIF & KRITERIA BOBOT (view_alternatif_kriteria_bobot)
           tabel ini menampilkan SEMUA kolom dari view: nilai kategorisasi
           tiap kriteria (c1..c6) PER PRODUK, bobot yang dipakai, dan preferensi
           yang dipilih user untuk sesi ini -- ini "matriks" sebelum dihitung
-          jadi skor SAW/WP/TOPSIS di tab sebelah.
+          jadi skor SAW/WP/TOPSIS di tab sebelah. Karena backend belum punya
+          tabel "normalisasi" terpisah, tabel inilah yang dipakai sebagai
+          representasi data dasar/normalisasi untuk kebutuhan export.
          ================================================================ */}
       <div className="w-full flex flex-col gap-3 pt-2">
-        <h3 className="font-bold text-slate-700">Matriks Alternatif — Sesi #{sessionId}</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <h3 className="font-bold text-slate-700">Matriks Alternatif (Data Dasar/Normalisasi) — Sesi #{sessionId}</h3>
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <SearchBar value={matrixSearch} onChange={setMatrixSearch} placeholder="Cari nama produk atau brand..." />
+            <ExportExcelButton data={exportMatrixRows} fileName={`matriks-normalisasi-sesi-${sessionId}`} sheetName="Matriks" />
+          </div>
+        </div>
 
         {isMatrixLoading && <p className="text-sm font-medium text-slate-500">Memuat matriks...</p>}
         {matrixError && <p className="text-sm font-bold text-red-600">{matrixError}</p>}
@@ -246,14 +310,14 @@ export default function KriteriaBobotView({ sessionId }: KriteriaBobotViewProps)
                 </tr>
               </thead>
               <tbody>
-                {matrixData.length === 0 && (
+                {filteredMatrixData.length === 0 && (
                   <tr>
                     <td colSpan={2 + KOLOM_KRITERIA.length * 3} className="text-center py-6 text-slate-500 bg-white rounded-xl">
-                      Belum ada data matriks untuk sesi ini.
+                      {matrixSearch ? 'Tidak ada produk yang cocok dengan pencarian.' : 'Belum ada data matriks untuk sesi ini.'}
                     </td>
                   </tr>
                 )}
-                {matrixData.map((row) => (
+                {filteredMatrixData.map((row) => (
                   <tr key={row.product_id} className="bg-white text-slate-800 font-semibold shadow-sm border border-slate-100">
                     <td className="px-4 py-3 rounded-l-xl border-y border-l border-slate-200 whitespace-nowrap">{row.nama_produk}</td>
                     <td className="px-4 py-3 border-y border-slate-200 whitespace-nowrap">{row.nama_brand}</td>

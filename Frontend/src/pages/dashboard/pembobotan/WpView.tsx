@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { RecommendationItem } from '../../../types/spk';
 import { getRecommendation } from '../../../api/recommendation';
+import ExportExcelButton from '../../../components/ui/ExcelButton';
+import type { ExcelRow } from '../../../lib/exportExcel';
 
 interface WpViewProps {
   sessionId: number | null;
@@ -36,6 +38,21 @@ export default function WpView({ sessionId }: WpViewProps) {
     return () => { mounted = false; };
   }, [sessionId]);
 
+  // Baris export excel mengikuti kolom yang tampil di tabel, termasuk Nilai S (khusus WP)
+  const exportRows: ExcelRow[] = useMemo(
+    () =>
+      data.map((row) => ({
+        Rank: row.ranking,
+        Produk: row.nama_hp,
+        Brand: row.brand,
+        Customer: row.nama_customer ?? '-',
+        'Harga (Rp)': row.harga,
+        'Nilai S': row.nilai_s !== undefined ? Number(row.nilai_s.toFixed(3)) : null,
+        'Skor WP (V)': Number(row.skor.toFixed(3)),
+      })),
+    [data]
+  );
+
   if (sessionId === null) {
     return (
       <div className="text-center py-10 text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
@@ -46,7 +63,10 @@ export default function WpView({ sessionId }: WpViewProps) {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <h3 className="font-bold text-slate-700">Hasil Metode WP — Sesi #{sessionId}</h3>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <h3 className="font-bold text-slate-700">Hasil Metode WP — Sesi #{sessionId}</h3>
+        <ExportExcelButton data={exportRows} fileName={`hasil-wp-sesi-${sessionId}`} sheetName="WP" />
+      </div>
 
       {isLoading && <p className="text-sm font-medium text-slate-500">Menghitung...</p>}
       {error && <p className="text-sm font-bold text-red-600">{error}</p>}

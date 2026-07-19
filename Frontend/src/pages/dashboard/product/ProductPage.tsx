@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CreateProduct from './CreateProduct';
 import EditProduct from './EditProduct';
 import type { ApiProduct, Brand } from '../../../types/product';
@@ -6,6 +6,9 @@ import { getProducts, createProduct, updateProduct, deleteProduct, type ProductP
 import { getBrands } from '../../../api/brands';
 import { getErrorMessage } from '../../../lib/errorMessage';
 import { resolveImageUrl } from '../../../lib/resolveImageUrl';
+import SearchBar from '../../../components/ui/SearchBar';
+import ExportExcelButton from '../../../components/ui/ExcelButton';
+import type { ExcelRow } from '../../../lib/exportExcel';
 
 export default function ProductPage() {
   const columns = ['ID', 'Foto', 'Nama', 'Brand', 'Harga', 'RAM', 'Penyimpanan', 'Chipset', 'Aksi'];
@@ -14,6 +17,7 @@ export default function ProductPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -37,6 +41,44 @@ export default function ProductPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Search client-side: cocokkan nama produk, nama brand, dan chipset.
+  const filteredProducts = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return products;
+    return products.filter((p) => {
+      const brand = brandName(p).toLowerCase();
+      return (
+        p.nama.toLowerCase().includes(keyword) ||
+        brand.includes(keyword) ||
+        (p.chipset ?? '').toLowerCase().includes(keyword)
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, brands, search]);
+
+  // Baris untuk export Excel mengikuti hasil filter search yang sedang tampil.
+  const exportRows: ExcelRow[] = useMemo(
+    () =>
+      filteredProducts.map((p) => ({
+        ID: p.id,
+        Nama: p.nama,
+        Brand: brandName(p),
+        'Harga (Rp)': p.harga,
+        'RAM (GB)': p.ram,
+        'Penyimpanan (GB)': p.penyimpanan,
+        'Baterai (mAh)': p.baterai,
+        'Update OS (Tahun)': p.update_os,
+        'Kamera (MP)': p.resolusi_kamera,
+        Chipset: p.chipset,
+        OS: p.os,
+        'Tahun Rilis': p.tahun_rilis,
+        'Fast Charging': p.fast_charging,
+        Display: p.display,
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredProducts, brands]
+  );
 
   const handleDelete = async (id: number) => {
     const isConfirm = window.confirm('Apakah kamu yakin ingin menghapus produk ini?');
@@ -67,15 +109,19 @@ export default function ProductPage() {
   return (
     <div className="w-full flex flex-col gap-4">
 
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-2">
         <h3 className="font-bold text-slate-700 hidden md:block">Manajemen Data Produk</h3>
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="px-4 py-2 bg-[#d62828] hover:bg-red-700 text-white font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-2 text-sm w-full md:w-auto justify-center cursor-pointer"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-          Tambah Produk
-        </button>
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+          <SearchBar value={search} onChange={setSearch} placeholder="Cari nama, brand, atau chipset..." />
+          <ExportExcelButton data={exportRows} fileName="data-produk" sheetName="Produk" />
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="px-4 py-2 bg-[#d62828] hover:bg-red-700 text-white font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center gap-2 text-sm w-full md:w-auto justify-center cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+            Tambah Produk
+          </button>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm font-medium text-slate-500">Memuat data...</p>}
@@ -95,10 +141,14 @@ export default function ProductPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.length === 0 && (
-                  <tr><td colSpan={9} className="text-center py-6 text-slate-500 bg-white rounded-xl">Belum ada data produk.</td></tr>
+                {filteredProducts.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="text-center py-6 text-slate-500 bg-white rounded-xl">
+                      {search ? 'Tidak ada produk yang cocok dengan pencarian.' : 'Belum ada data produk.'}
+                    </td>
+                  </tr>
                 )}
-                {products.map((row) => (
+                {filteredProducts.map((row) => (
                   <tr key={row.id} className="bg-white text-slate-800 font-semibold shadow-sm border border-slate-100 hover:bg-slate-50">
                     <td className="px-6 py-4 rounded-l-xl border-y border-l border-slate-200">{row.id}</td>
                     <td className="px-6 py-4 border-y border-slate-200">
@@ -128,10 +178,12 @@ export default function ProductPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:hidden">
-            {products.length === 0 && (
-              <div className="text-center py-6 text-slate-500 bg-white rounded-xl border border-slate-200">Belum ada data produk.</div>
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-6 text-slate-500 bg-white rounded-xl border border-slate-200">
+                {search ? 'Tidak ada produk yang cocok dengan pencarian.' : 'Belum ada data produk.'}
+              </div>
             )}
-            {products.map((row) => (
+            {filteredProducts.map((row) => (
               <div key={row.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <span className="bg-[#1e2530] text-white text-xs font-black px-2 py-1 rounded-md">ID: {row.id}</span>
@@ -157,7 +209,9 @@ export default function ProductPage() {
           </div>
 
           <div className="flex justify-between items-center mt-4 text-sm font-bold text-slate-600 px-2">
-            <span>Menampilkan {products.length} data</span>
+            <span>
+              Menampilkan {filteredProducts.length} {search ? `dari ${products.length} ` : ''}data
+            </span>
           </div>
         </>
       )}

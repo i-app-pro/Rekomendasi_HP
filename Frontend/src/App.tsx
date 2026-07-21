@@ -1,122 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+// --- IMPORT LAYOUTS ---
+import MainLayout from "./layout/MainLayout";
+import AuthLayout from "./layout/AuthLayout";
+import DashboardLayout from "./layout/DashboardLayout"; // Pastikan path foldernya sesuai
 
+// Main/Public Pages
+import Beranda from "./pages/main/Beranda"; 
+import HalamanProduk from "./pages/main/Produk"; 
+import HalamanRekomendasi from "./pages/main/Rekomendasi"; 
+import HalamanAboutUs from "./pages/main/Tentang";
+
+// Auth Pages
+import LoginForm from "./pages/auth/LoginForm";
+import RegisterForm from "./pages/auth/RegisterForm";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+// Dashboard Pages
+import DashboardHome from "./pages/dashboard/DashboardHome"; // Pastikan path foldernya sesuai
+import UserPage from "./pages/dashboard/user/UserPage";
+import BrandPage from "./pages/dashboard/brand/BrandPage";
+import CriteriaValuePage from "./pages/dashboard/criteria_value/CriteriaValuePage";
+import ProductPage from "./pages/dashboard/product/ProductPage";
+import PembobotanPage from "./pages/dashboard/pembobotan/PembobotanPage";
+import CriteriaPage from "./pages/dashboard/criteria/CriteriaPage";
+import FounderPage from "./pages/dashboard/founder/FounderPage";
+
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <BrowserRouter>
+      <Routes>
+        {/* Rute Publik Biasa */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Beranda />} />
+          <Route path="/produk" element={<HalamanProduk />} />
+          <Route path="/tentang" element={<HalamanAboutUs />} />
 
-      <div className="ticks"></div>
+          {/* Rekomendasi butuh login (endpoint /api/sessions & /api/recommendation
+              mewajibkan Authorization: Bearer <token>) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/rekomendasi" element={<HalamanRekomendasi />} />
+          </Route>
+        </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Rute Auth */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/register" element={<RegisterForm />} />
+        </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* RUTE DASHBOARD ADMIN */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/dashboard" element={<DashboardLayout />}>
+          {/* "index" berarti ini yang muncul saat user akses "/dashboard" */}
+            <Route index element={<DashboardHome />} />
+            <Route path= "/dashboard/user" element={<UserPage />} />
+            <Route path= "/dashboard/brand" element={<BrandPage />} />
+            <Route path= "/dashboard/criteria-value" element={<CriteriaValuePage />} />
+            <Route path= "/dashboard/product" element={<ProductPage />} />
+            <Route path= "/dashboard/pembobotan" element={<PembobotanPage />} />
+            <Route path= "/dashboard/criteria" element={<CriteriaPage />} />
+            <Route path= "/dashboard/founder" element={<FounderPage />} />
+          </Route>
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App

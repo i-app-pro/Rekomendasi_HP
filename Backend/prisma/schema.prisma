@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -14,61 +8,212 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Category {
-  id         Int      @id @default(autoincrement())
-  name       String
-  createdAt  DateTime @default(now()) @map("created_at")
+model Brands {
+  id         Int        @id @default(autoincrement())
+  nama       String     @db.VarChar(100)
+  created_at DateTime   @default(now()) @db.DateTime(0)
+  updated_at DateTime   @default(now()) @updatedAt @db.DateTime(0)
+  products   Products[]
 
-  events     Event[]
-
-  @@map("categories")
+  @@map("brands")
 }
 
-model Pembicara {
-  id         Int      @id @default(autoincrement())
-  name       String
-  role       String
-  image      String
-  createdAt  DateTime @default(now()) @map("created_at")
+model Criteria {
+  id             Int              @id @default(autoincrement())
+  nama           String           @db.VarChar(100)
+  atribut        criteria_atribut
+  default_bobot  Int
+  created_at     DateTime         @default(now()) @db.DateTime(0)
+  updated_at     DateTime         @default(now()) @updatedAt @db.DateTime(0)
+  criteria_value CriteriaValue[]
+  pembobotan     Pembobotan[]
 
-  events     Event[]
-
-  @@map("speakers")
+  @@map("criteria")
 }
 
-model Event {
-  id            Int         @id @default(autoincrement())
-  name          String
+model Founder {
+  id          Int      @id @default(autoincrement())
+  foto        String?  @db.VarChar(255)
+  nama        String   @db.VarChar(100)
+  status      String   @db.VarChar(150)
+  universitas String   @db.VarChar(150)
+  framework   String   @db.VarChar(150)
+  username_ig String?  @db.VarChar(100)
+  email       String?  @db.VarChar(100)
+  github      String?  @db.VarChar(100)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @updatedAt @db.DateTime(0)
 
-  categoryId    Int         @map("category_id")
-  pembicaraId   Int         @map("pembicara_id")
-
-  location      String
-  dateEvent     DateTime    @map("date_event")
-  description   String
-  createdAt     DateTime    @default(now()) @map("created_at")
-
-  category       Category    @relation(fields: [categoryId], references: [id])
-  pembicara      Pembicara   @relation(fields: [pembicaraId], references: [id])
-
-  @@map("events")
+  @@map("founders")
 }
 
-model User {
-  id          Int       @id @default(autoincrement())
-  name        String
-  password    String
-  email       String    @unique
-  foto        String?   @db.LongText
-  createdAt   DateTime  @default(now()) @map("created_at")
+model CriteriaValue {
+  id               Int               @id @default(autoincrement())
+  label            String            @db.VarChar(100)
+  nilai            Int
+  created_at       DateTime          @default(now()) @db.DateTime(0)
+  updated_at       DateTime          @default(now()) @updatedAt @db.DateTime(0)
+  criteria_id      Int
+  criteria         Criteria          @relation(fields: [criteria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "criteria_value_criteria_FK")
+  user_preferences UserPreferences[]
 
-  @@map("users")
+  @@index([criteria_id], map: "criteria_value_criteria_FK")
+  @@map("criteria_value")
 }
 
-model Role{
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  createdAt   DateTime  @default(now()) @map("created_at")
+model Products {
+  id              Int      @id @default(autoincrement())
+  nama            String?  @db.VarChar(100)
+  harga           Int
+  ram             Int
+  penyimpanan     Int
+  baterai         Int
+  update_os       Int
+  resolusi_kamera Int
+  chipset         String   @db.VarChar(100)
+  os              String   @db.VarChar(50)
+  tahun_rilis     DateTime @db.DateTime(0)
+  fast_charging   String   @db.VarChar(50)
+  display         String   @db.VarChar(100)
+  foto            String?  @db.VarChar(255)
+  created_at      DateTime @default(now()) @db.DateTime(0)
+  updated_at      DateTime @default(now()) @db.DateTime(0)
+  brands_id       Int
+  brands          Brands   @relation(fields: [brands_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "products_brands_FK")
 
-  @@map("roles")
+  @@index([brands_id], map: "products_brands_FK")
+  @@map("products")
+}
+
+model RecommendationSession {
+  id               Int               @id @default(autoincrement())
+  created_at       DateTime          @default(now()) @db.DateTime(0)
+  user_id          Int
+  pembobotan       Pembobotan[]
+  user             user              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "recommendation_session_user_FK")
+  user_preferences UserPreferences[]
+
+  @@index([user_id], map: "recommendation_session_user_FK")
+  @@map("recommendation_session")
+}
+
+model Pembobotan {
+  id                        Int                   @id @default(autoincrement())
+  nilai_bobot               Int
+  created_at                DateTime              @default(now()) @db.DateTime(0)
+  updated_at                DateTime              @default(now()) @updatedAt @db.DateTime(0)
+  recommendation_session_id Int
+  criteria_id               Int
+  criteria                  Criteria              @relation(fields: [criteria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pembobotan_criteria_FK")
+  recommendation_session    RecommendationSession @relation(fields: [recommendation_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pembobotan_recommendation_session_FK")
+
+  @@index([criteria_id], map: "pembobotan_criteria_FK")
+  @@index([recommendation_session_id], map: "pembobotan_recommendation_session_FK")
+  @@map("pembobotan")
+}
+
+model UserPreferences {
+  id                        Int                   @id @default(autoincrement())
+  created_at                DateTime              @default(now()) @db.DateTime(0)
+  updated_at                DateTime              @updatedAt @db.DateTime(0)
+  recommendation_session_id Int
+  criteria_value_id         Int
+  criteria_value            CriteriaValue         @relation(fields: [criteria_value_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_preferences_criteria_value_FK")
+  recommendation_session    RecommendationSession @relation(fields: [recommendation_session_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_preferences_recommendation_session_FK")
+
+  @@index([criteria_value_id], map: "user_preferences_criteria_value_FK")
+  @@index([recommendation_session_id], map: "user_preferences_recommendation_session_FK")
+  @@map("user_preferences")
+}
+
+model user {
+  id                     Int                     @id @default(autoincrement())
+  nama                   String                  @db.VarChar(100)
+  email                  String                  @unique(map: "user_email_UN") @db.VarChar(100)
+  password               String                  @db.VarChar(100)
+  role                   user_role               @default(customers)
+  created_at             DateTime                @default(now()) @db.DateTime(0)
+  updated_at             DateTime                @default(now()) @updatedAt @db.DateTime(0)
+  recommendation_session RecommendationSession[]
+}
+
+view view_alternatif_kriteria_bobot {
+  session_id    Int?
+  nama_customer String? @db.VarChar(100)
+  product_id    Int?
+  nama_produk   String? @db.VarChar(100)
+  nama_brand    String? @db.VarChar(100)
+  c1            BigInt?
+  c2            BigInt?
+  c3            BigInt?
+  c4            BigInt?
+  c5            BigInt?
+  c6            BigInt?
+  bobot_c1      Int?
+  bobot_c2      Int?
+  bobot_c3      Int?
+  bobot_c4      Int?
+  bobot_c5      Int?
+  bobot_c6      Int?
+  pref_c1       Int?
+  pref_c2       Int?
+  pref_c3       Int?
+  pref_c4       Int?
+  pref_c5       Int?
+  pref_c6       Int?
+}
+
+view view_perhitungan_saw {
+  session_id    Int?
+  nama_customer String?  @db.VarChar(100)
+  product_id    Int?
+  nama_produk   String?  @db.VarChar(100)
+  nama_brand    String?  @db.VarChar(100)
+  nilai_saw     Decimal? @db.Decimal(41, 6)
+  ranking_saw   BigInt?
+}
+
+view view_perhitungan_topsis {
+  session_id     Int?
+  nama_customer  String? @db.VarChar(100)
+  product_id     Int?
+  nama_produk    String? @db.VarChar(100)
+  nama_brand     String? @db.VarChar(100)
+  a_plus_c1      Float?
+  a_plus_c2      Float?
+  a_plus_c3      Float?
+  a_plus_c4      Float?
+  a_plus_c5      Float?
+  a_plus_c6      Float?
+  a_minus_c1     Float?
+  a_minus_c2     Float?
+  a_minus_c3     Float?
+  a_minus_c4     Float?
+  a_minus_c5     Float?
+  a_minus_c6     Float?
+  d_plus         Float?
+  d_minus        Float?
+  nilai_topsis   Float?
+  ranking_topsis BigInt?
+}
+
+view view_perhitungan_wp {
+  session_id    Int?
+  nama_customer String? @db.VarChar(100)
+  product_id    Int?
+  nama_produk   String? @db.VarChar(100)
+  nama_brand    String? @db.VarChar(100)
+  nilai_s       Float?
+  nilai_v       Float?
+  ranking       BigInt?
+}
+
+enum criteria_atribut {
+  cost
+  benefit
+}
+
+enum user_role {
+  admin
+  customers
 }
